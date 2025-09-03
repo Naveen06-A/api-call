@@ -1,0 +1,104 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f0f2f5;
+    color: #1c1e21;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h1 {
+    color: #1877f2;
+    margin-bottom: 10px;
+}
+
+p {
+    margin-bottom: 20px;
+    color: #65676b;
+}
+
+.btn {
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin: 10px 0;
+}
+
+.btn:hover {
+    background-color: #166fe5;
+}
+
+.btn:disabled {
+    background-color: #e4e6eb;
+    color: #bcc0c4;
+    cursor: not-allowed;
+}
+
+.hidden {
+    display: none;
+}
+
+.status {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.status.success {
+    background-color: #e7f3ff;
+    color: #1877f2;
+    border: 1px solid #1877f2;
+}
+
+.status.error {
+    background-color: #ffe7e7;
+    color: #f02849;
+    border: 1px solid #f02849;
+}
+
+.ad-form {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.ad-form h2 {
+    margin-bottom: 15px;
+    color: #1c1e21;
+}
+
+#adContent {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    resize: vertical;
+}
+
+#adContent:focus {
+    outline: none;
+    border-color: #1877f2;
+}
+
+
+
