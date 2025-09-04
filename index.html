@@ -232,11 +232,6 @@
             color: #65676b;
             font-size: 0.9rem;
         }
-        .post-metrics {
-            color: #65676b;
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
         .post-media {
             margin-top: 10px;
         }
@@ -325,11 +320,6 @@
             color: #65676b;
             font-size: 0.9rem;
         }
-        .page-followers {
-            color: #1877f2;
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
         .warning {
             background-color: #fff4e6;
             border-left: 4px solid #ffa94d;
@@ -342,45 +332,13 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
-        .metric {
-            border-bottom: 1px solid #dddfe2;
-            padding: 10px 0;
-        }
-        .metric h4 {
-            margin-bottom: 5px;
-        }
-        .metric p {
-            color: #65676b;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-        .comments-container {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f0f2f5;
-            border-radius: 8px;
-        }
-        .comment {
-            border-bottom: 1px solid #dddfe2;
-            padding: 10px 0;
-        }
-        .comment-author {
-            font-weight: 600;
-        }
-        .comment-message {
-            margin: 5px 0;
-        }
-        .comment-date {
-            color: #65676b;
-            font-size: 0.8rem;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Facebook Integration Demo</h1>
-            <p class="description">Connect with Facebook to manage your pages, post content, view posts, comments, likes, followers, and metrics</p>
+            <p class="description">Connect with Facebook to manage your pages and post content</p>
         </header>
         
         <div class="warning">
@@ -399,10 +357,9 @@
             <ol>
                 <li>Enter your Facebook App ID and click "Submit App ID".</li>
                 <li>Click "Connect Facebook" to authenticate with OAuth.</li>
-                <li>After login, select a page to manage (followers count shown).</li>
+                <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
-                <li>View your page's posts in the "View Posts" tab, including likes, comments count, and view full comments.</li>
-                <li>View page metrics and followers in the "Metrics" tab.</li>
+                <li>View your page's posts in the "View Posts" tab.</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
@@ -411,7 +368,6 @@
             <div class="tab active" data-tab="connect">Connect</div>
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
-            <div class="tab" data-tab="metrics">Metrics</div>
         </div>
         
         <div class="tab-content active" id="connect-tab">
@@ -521,32 +477,8 @@
             </div>
         </div>
         
-        <div class="tab-content" id="metrics-tab">
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-chart-bar"></i> Page Metrics</h2>
-                <div class="form-group">
-                    <label for="metricsPageSelect">Selected Page:</label>
-                    <select id="metricsPageSelect" disabled>
-                        <option value="">-- Select a Page --</option>
-                    </select>
-                </div>
-                <button id="loadMetricsBtn" class="btn">
-                    <i class="fas fa-chart-line"></i> Load Metrics
-                </button>
-                <div id="metricsContainer">
-                    <h3 style="margin: 20px 0 10px;">Recent Metrics</h3>
-                    <div id="metricsList">
-                        <p class="description">Your metrics will appear here after you load them</p>
-                    </div>
-                </div>
-                <div id="metricsStatus" class="status info hidden">
-                    <span id="metricsStatusText"></span>
-                </div>
-            </div>
-        </div>
-        
         <div class="footer">
-            <p>This is a demonstration of Facebook integration with OAuth authentication, including data like comments, followers, likes, and metrics.</p>
+            <p>This is a demonstration of Facebook integration with OAuth authentication.</p>
         </div>
     </div>
     <script>
@@ -565,7 +497,6 @@
             const userIdDisplay = document.getElementById('userIdDisplay');
             const pageSelect = document.getElementById('pageSelect');
             const retrievePageSelect = document.getElementById('retrievePageSelect');
-            const metricsPageSelect = document.getElementById('metricsPageSelect');
             const postContent = document.getElementById('postContent');
             const postBtn = document.getElementById('postBtn');
             const postStatus = document.getElementById('postStatus');
@@ -573,11 +504,7 @@
             const retrieveBtn = document.getElementById('retrieveBtn');
             const retrieveStatus = document.getElementById('retrieveStatus');
             const retrieveStatusText = document.getElementById('retrieveStatusText');
-            const loadMetricsBtn = document.getElementById('loadMetricsBtn');
-            const metricsStatus = document.getElementById('metricsStatus');
-            const metricsStatusText = document.getElementById('metricsStatusText');
             const postsList = document.getElementById('postsList');
-            const metricsList = document.getElementById('metricsList');
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
             const previewContent = document.getElementById('previewContent');
@@ -623,7 +550,6 @@
             logoutBtn.addEventListener('click', logout);
             postBtn.addEventListener('click', createPost);
             retrieveBtn.addEventListener('click', retrievePosts);
-            loadMetricsBtn.addEventListener('click', loadMetrics);
             postContent.addEventListener('input', updatePostPreview);
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
@@ -672,7 +598,7 @@
                 connectBtn.disabled = true;
                 connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
                 
-                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights&response_type=token`;
+                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts&response_type=token`;
                 window.location.href = authUrl;
             }
             
@@ -706,7 +632,7 @@
             }
             
             function getPages() {
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/accounts?fields=access_token,name,category,fan_count&access_token=${accessToken}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/accounts?access_token=${accessToken}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch pages: ${response.statusText}`);
                         return response.json();
@@ -739,7 +665,6 @@
                     pageItem.innerHTML = `
                         <div class="page-name">${page.name}</div>
                         <div class="page-category">${page.category}</div>
-                        <div class="page-followers">Followers: ${page.fan_count.toLocaleString()}</div>
                     `;
                     
                     pageItem.addEventListener('click', () => {
@@ -756,10 +681,8 @@
                 currentPage = page;
                 pageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 retrievePageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
-                metricsPageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 pageSelect.disabled = false;
                 retrievePageSelect.disabled = false;
-                metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
                 
                 // Update preview with page name
@@ -893,7 +816,7 @@
                 retrieveBtn.disabled = true;
                 retrieveBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments,reactions.type(LIKE).limit(0).summary(true).as(likes),comments.summary(total_count).as(comments)&access_token=${currentPage.access_token}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
                         return response.json();
@@ -932,10 +855,6 @@
                     date.className = 'post-date';
                     date.textContent = new Date(post.created_time).toLocaleString();
                     
-                    const metrics = document.createElement('div');
-                    metrics.className = 'post-metrics';
-                    metrics.innerHTML = `Likes: ${post.likes ? post.likes.summary.total_count : 0} | Comments: ${post.comments ? post.comments.summary.total_count : 0}`;
-                    
                     const mediaContainer = document.createElement('div');
                     mediaContainer.className = 'post-media';
                     
@@ -955,130 +874,14 @@
                         });
                     }
                     
-                    const commentsBtn = document.createElement('button');
-                    commentsBtn.className = 'btn';
-                    commentsBtn.style.marginTop = '10px';
-                    commentsBtn.innerHTML = '<i class="fas fa-comments"></i> View Comments';
-                    
-                    const commentsContainer = document.createElement('div');
-                    commentsContainer.className = 'comments-container hidden';
-                    
-                    commentsBtn.addEventListener('click', () => {
-                        if (commentsContainer.classList.contains('hidden')) {
-                            if (commentsContainer.innerHTML === '') {
-                                loadComments(post.id, commentsContainer);
-                            }
-                            commentsContainer.classList.remove('hidden');
-                            commentsBtn.innerHTML = '<i class="fas fa-comments"></i> Hide Comments';
-                        } else {
-                            commentsContainer.classList.add('hidden');
-                            commentsBtn.innerHTML = '<i class="fas fa-comments"></i> View Comments';
-                        }
-                    });
-                    
                     postEl.appendChild(message);
                     postEl.appendChild(date);
-                    postEl.appendChild(metrics);
                     
                     if (mediaContainer.children.length > 0) {
                         postEl.appendChild(mediaContainer);
                     }
                     
-                    postEl.appendChild(commentsBtn);
-                    postEl.appendChild(commentsContainer);
-                    
                     postsList.appendChild(postEl);
-                });
-            }
-            
-            function loadComments(postId, container) {
-                container.innerHTML = '<p>Loading comments...</p>';
-                
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${postId}/comments?fields=message,from,created_time&access_token=${currentPage.access_token}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch comments: ${response.statusText}`);
-                        return response.json();
-                    })
-                    .then(response => {
-                        const comments = response.data;
-                        container.innerHTML = '';
-                        
-                        if (comments.length === 0) {
-                            container.innerHTML = '<p>No comments yet</p>';
-                            return;
-                        }
-                        
-                        comments.forEach(comment => {
-                            const commentEl = document.createElement('div');
-                            commentEl.className = 'comment';
-                            commentEl.innerHTML = `
-                                <div class="comment-author">${comment.from.name}</div>
-                                <div class="comment-message">${comment.message}</div>
-                                <div class="comment-date">${new Date(comment.created_time).toLocaleString()}</div>
-                            `;
-                            container.appendChild(commentEl);
-                        });
-                    })
-                    .catch(error => {
-                        container.innerHTML = `<p>Error loading comments: ${error.message}</p>`;
-                    });
-            }
-            
-            function loadMetrics() {
-                if (!currentPage) {
-                    showMetricsStatus('Please select a page first', 'error');
-                    return;
-                }
-                
-                showMetricsStatus('Loading metrics from Facebook...', 'info');
-                loadMetricsBtn.disabled = true;
-                loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
-                
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=page_fans,page_engaged_users,page_impressions,page_post_engagements,page_views_total&period=day&access_token=${currentPage.access_token}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-                        return response.json();
-                    })
-                    .then(response => {
-                        const metricsData = response.data;
-                        displayMetrics(metricsData);
-                        showMetricsStatus(`Loaded ${metricsData.length} metrics`, 'success');
-                        loadMetricsBtn.disabled = false;
-                        loadMetricsBtn.innerHTML = '<i class="fas fa-chart-line"></i> Load Metrics';
-                    })
-                    .catch(error => {
-                        showMetricsStatus('Error loading metrics: ' + error.message, 'error');
-                        loadMetricsBtn.disabled = false;
-                        loadMetricsBtn.innerHTML = '<i class="fas fa-chart-line"></i> Load Metrics';
-                    });
-            }
-            
-            function displayMetrics(metrics) {
-                metricsList.innerHTML = '';
-                
-                if (metrics.length === 0) {
-                    metricsList.innerHTML = '<p class="description">No metrics available for this page</p>';
-                    return;
-                }
-                
-                metrics.forEach(metric => {
-                    const metricEl = document.createElement('div');
-                    metricEl.className = 'metric';
-                    
-                    const title = document.createElement('h4');
-                    title.textContent = metric.title || metric.name;
-                    
-                    const desc = document.createElement('p');
-                    desc.textContent = metric.description;
-                    
-                    const value = document.createElement('div');
-                    value.textContent = `Latest Value: ${metric.values[0].value}`;
-                    
-                    metricEl.appendChild(title);
-                    metricEl.appendChild(desc);
-                    metricEl.appendChild(value);
-                    
-                    metricsList.appendChild(metricEl);
                 });
             }
             
@@ -1101,7 +904,6 @@
                 mediaFile.value = '';
                 previewMedia.innerHTML = '';
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
-                metricsList.innerHTML = '<p class="description">Your metrics will appear here after you load them</p>';
                 appIdInput.value = '';
                 
                 showStatus('Logged out successfully', 'info');
@@ -1124,12 +926,6 @@
                 retrieveStatusText.textContent = message;
                 retrieveStatus.className = `status ${type}`;
                 retrieveStatus.classList.remove('hidden');
-            }
-            
-            function showMetricsStatus(message, type) {
-                metricsStatusText.textContent = message;
-                metricsStatus.className = `status ${type}`;
-                metricsStatus.classList.remove('hidden');
             }
         });
     </script>
