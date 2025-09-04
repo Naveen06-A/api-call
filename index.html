@@ -53,6 +53,7 @@
             font-size: 1.3rem;
             color: #1877f2;
             margin-bottom: 15px;
+            display: flex;
             align-items: center;
         }
         .card-title i {
@@ -341,6 +342,29 @@
             color: #65676b;
             font-size: 0.9rem;
         }
+        .comments-section {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f2f5;
+            border-radius: 6px;
+        }
+        .comment {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-left: 2px solid #1877f2;
+            background-color: white;
+        }
+        .comment-author {
+            font-weight: bold;
+            color: #1877f2;
+        }
+        .comment-text {
+            margin-top: 2px;
+        }
+        .comment-date {
+            font-size: 0.8rem;
+            color: #65676b;
+        }
     </style>
 </head>
 <body>
@@ -369,8 +393,8 @@
                 <li>Click "Connect Facebook" to authenticate with OAuth.</li>
                 <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
-                <li>View your page's posts with likes and comments in the "View Posts" tab.</li>
-                <li>View page metrics (followers, likes, comments, impressions, etc.) in the "View Metrics" tab (last 28 days).</li>
+                <li>View your page's posts with likes, comments (including comment text), and other details in the "View Posts" tab.</li>
+                <li>View page metrics (followers, impressions, engagements, etc.) in the "View Metrics" tab (last 28 days).</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, use a real HTTPS domain.</p>
         </div>
@@ -506,17 +530,16 @@
                     <div id="summaryMetrics">
                         <p><strong>Total Followers:</strong> <span id="totalFollowers">N/A</span></p>
                         <p><strong>Total Impressions:</strong> <span id="totalImpressions">N/A</span></p>
-                        <p><strong>Engaged Users:</strong> <span id="engagedUsers">N/A</span></p>
                         <p><strong>Post Engagements:</strong> <span id="postEngagements">N/A</span></p>
                     </div>
-                    <h4>Country-wise Impressions (Unique)</h4>
+                    <h4>Country-wise Fans</h4>
                     <table id="countryTable" style="width:100%; border-collapse: collapse;">
-                        <thead><tr><th>Country</th><th>Impressions</th></tr></thead>
+                        <thead><tr><th>Country</th><th>Fans</th></tr></thead>
                         <tbody></tbody>
                     </table>
-                    <h4>Age and Gender-wise Impressions (Unique)</h4>
+                    <h4>Age and Gender-wise Fans</h4>
                     <table id="ageGenderTable" style="width:100%; border-collapse: collapse;">
-                        <thead><tr><th>Age Group</th><th>Gender</th><th>Impressions</th></tr></thead>
+                        <thead><tr><th>Age Group</th><th>Gender</th><th>Fans</th></tr></thead>
                         <tbody></tbody>
                     </table>
                     <h4>Post-specific Metrics</h4>
@@ -573,7 +596,6 @@
             const pageList = document.getElementById('pageList');
             const totalFollowers = document.getElementById('totalFollowers');
             const totalImpressions = document.getElementById('totalImpressions');
-            const engagedUsers = document.getElementById('engagedUsers');
             const postEngagements = document.getElementById('postEngagements');
             const countryTableBody = document.getElementById('countryTable').querySelector('tbody');
             const ageGenderTableBody = document.getElementById('ageGenderTable').querySelector('tbody');
@@ -699,12 +721,15 @@
             }
             
             function getPages() {
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/accounts?access_token=${accessToken}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/accounts?access_token=${accessToken}&fields=id,name,category,fan_count,fans_country,fans_age_gender`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch pages: ${response.statusText}`);
                         return response.json();
                     })
                     .then(response => {
+                        if (response.error) {
+                            throw new Error(response.error.message);
+                        }
                         pages = response.data;
                         
                         if (pages.length === 0) {
@@ -887,7 +912,7 @@
                 retrieveBtn.disabled = true;
                 retrieveBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments,likes.summary(true),comments{from,message,created_time}.summary(true)&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
                         return response.json();
@@ -955,6 +980,24 @@
                     const commentsCount = post.comments?.summary?.total_count || 0;
                     metrics.textContent = `Likes: ${likesCount} | Comments: ${commentsCount}`;
                     
+                    // Comments section
+                    const commentsSection = document.createElement('div');
+                    commentsSection.className = 'comments-section';
+                    if (post.comments && post.comments.data && post.comments.data.length > 0) {
+                        post.comments.data.forEach(comment => {
+                            const commentEl = document.createElement('div');
+                            commentEl.className = 'comment';
+                            commentEl.innerHTML = `
+                                <div class="comment-author">From: ${comment.from?.name || 'Unknown'}</div>
+                                <div class="comment-text">${comment.message || '(No text)'}</div>
+                                <div class="comment-date">${new Date(comment.created_time).toLocaleString()}</div>
+                            `;
+                            commentsSection.appendChild(commentEl);
+                        });
+                    } else {
+                        commentsSection.innerHTML = '<p>No comments available.</p>';
+                    }
+                    
                     postEl.appendChild(message);
                     postEl.appendChild(date);
                     
@@ -963,6 +1006,7 @@
                     }
                     
                     postEl.appendChild(metrics);
+                    postEl.appendChild(commentsSection);
                     postsList.appendChild(postEl);
                 });
             }
@@ -977,122 +1021,140 @@
                 retrieveMetricsBtn.disabled = true;
                 retrieveMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
-                const metrics = [
-                    'page_fan_count',
-                    'page_impressions',
-                    'page_impressions_by_country_unique',
-                    'page_impressions_by_age_gender_unique',
-                    'page_engaged_users',
-                    'page_post_engagements'
-                ].join(',');
-                
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=${metrics}&period=days_28&access_token=${currentPage.access_token}`)
+                // Fetch page basic info for followers
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}?fields=fan_count&access_token=${currentPage.access_token}`)
                     .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
-                            });
-                        }
+                        if (!response.ok) throw new Error(`Failed to fetch page info: ${response.statusText}`);
                         return response.json();
                     })
-                    .then(response => {
-                        if (response.error) {
-                            throw new Error(response.error.message);
+                    .then(pageResponse => {
+                        if (pageResponse.error) {
+                            throw new Error(pageResponse.error.message);
                         }
-                        const data = response.data;
+                        totalFollowers.textContent = pageResponse.fan_count || 'N/A';
                         
-                        // Total followers
-                        const followers = data.find(m => m.name === 'page_fan_count');
-                        totalFollowers.textContent = followers ? followers.values[0].value : 'N/A';
-                        
-                        // Total impressions
-                        const impressions = data.find(m => m.name === 'page_impressions');
-                        totalImpressions.textContent = impressions ? impressions.values[0].value : 'N/A';
-                        
-                        // Engaged users
-                        const engaged = data.find(m => m.name === 'page_engaged_users');
-                        engagedUsers.textContent = engaged ? engaged.values[0].value : 'N/A';
-                        
-                        // Post engagements
-                        const engagements = data.find(m => m.name === 'page_post_engagements');
-                        postEngagements.textContent = engagements ? engagements.values[0].value : 'N/A';
-                        
-                        // Country-wise impressions
-                        const countryData = data.find(m => m.name === 'page_impressions_by_country_unique');
-                        if (countryData) {
-                            const countries = countryData.values[0].value;
-                            countryTableBody.innerHTML = '';
-                            Object.entries(countries).sort((a, b) => b[1] - a[1]).forEach(([country, value]) => {
-                                const row = `<tr><td>${country}</td><td>${value}</td></tr>`;
-                                countryTableBody.innerHTML += row;
-                            });
-                        } else {
-                            countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
-                        }
-                        
-                        // Age and gender-wise impressions
-                        const ageGenderData = data.find(m => m.name === 'page_impressions_by_age_gender_unique');
-                        if (ageGenderData) {
-                            const ag = ageGenderData.values[0].value;
-                            ageGenderTableBody.innerHTML = '';
-                            Object.entries(ag).sort((a, b) => {
-                                const age1 = a[0].split('.')[1];
-                                const age2 = b[0].split('.')[1];
-                                return age1.localeCompare(age2);
-                            }).forEach(([key, value]) => {
-                                const [gender, age] = key.split('.');
-                                const genderLabel = gender === 'M' ? 'Male' : gender === 'F' ? 'Female' : 'Unknown';
-                                const row = `<tr><td>${age}</td><td>${genderLabel}</td><td>${value}</td></tr>`;
-                                ageGenderTableBody.innerHTML += row;
-                            });
-                        } else {
-                            ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
-                        }
-                        
-                        // Post-specific metrics (likes and comments)
-                        fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
+                        // Fetch demographic info
+                        fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}?fields=fans_country,fans_age_gender&access_token=${currentPage.access_token}`)
                             .then(response => {
-                                if (!response.ok) {
-                                    return response.json().then(err => {
-                                        throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
-                                    });
-                                }
+                                if (!response.ok) throw new Error(`Failed to fetch demographics: ${response.statusText}`);
                                 return response.json();
                             })
-                            .then(postResponse => {
-                                if (postResponse.error) {
-                                    throw new Error(postResponse.error.message);
+                            .then(demoResponse => {
+                                if (demoResponse.error) {
+                                    throw new Error(demoResponse.error.message);
                                 }
-                                postMetricsTableBody.innerHTML = '';
-                                const posts = postResponse.data;
-                                posts.forEach(post => {
-                                    const likesCount = post.likes?.summary?.total_count || 0;
-                                    const commentsCount = post.comments?.summary?.total_count || 0;
-                                    const row = `<tr><td>${post.id}</td><td>${likesCount}</td><td>${commentsCount}</td></tr>`;
-                                    postMetricsTableBody.innerHTML += row;
-                                });
-                                showMetricsStatus('Metrics loaded successfully', 'success');
-                                retrieveMetricsBtn.disabled = false;
-                                retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                                
+                                // Country-wise fans
+                                if (demoResponse.fans_country) {
+                                    countryTableBody.innerHTML = '';
+                                    Object.entries(demoResponse.fans_country).sort((a, b) => b[1] - a[1]).forEach(([country, value]) => {
+                                        const row = `<tr><td>${country}</td><td>${value}</td></tr>`;
+                                        countryTableBody.innerHTML += row;
+                                    });
+                                } else {
+                                    countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
+                                }
+                                
+                                // Age and gender-wise fans
+                                if (demoResponse.fans_age_gender) {
+                                    const ag = demoResponse.fans_age_gender;
+                                    ageGenderTableBody.innerHTML = '';
+                                    Object.entries(ag).sort((a, b) => {
+                                        const age1 = a[0].split('.')[1];
+                                        const age2 = b[0].split('.')[1];
+                                        return age1.localeCompare(age2);
+                                    }).forEach(([key, value]) => {
+                                        const [gender, age] = key.split('.');
+                                        const genderLabel = gender === 'M' ? 'Male' : gender === 'F' ? 'Female' : 'Unknown';
+                                        const row = `<tr><td>${age}</td><td>${genderLabel}</td><td>${value}</td></tr>`;
+                                        ageGenderTableBody.innerHTML += row;
+                                    });
+                                } else {
+                                    ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
+                                }
+                                
+                                // Fetch impressions and engagements using insights
+                                const insightsMetrics = 'page_impressions,page_post_engagements';
+                                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=${insightsMetrics}&period=days_28&access_token=${currentPage.access_token}`)
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            return response.json().then(err => {
+                                                throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
+                                            });
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(insightsResponse => {
+                                        if (insightsResponse.error) {
+                                            throw new Error(insightsResponse.error.message);
+                                        }
+                                        const data = insightsResponse.data;
+                                        
+                                        // Total impressions
+                                        const impressions = data.find(m => m.name === 'page_impressions');
+                                        totalImpressions.textContent = impressions ? impressions.values[0].value : 'N/A';
+                                        
+                                        // Post engagements
+                                        const engagements = data.find(m => m.name === 'page_post_engagements');
+                                        postEngagements.textContent = engagements ? engagements.values[0].value : 'N/A';
+                                        
+                                        // Post-specific metrics
+                                        fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
+                                            .then(response => {
+                                                if (!response.ok) {
+                                                    return response.json().then(err => {
+                                                        throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
+                                                    });
+                                                }
+                                                return response.json();
+                                            })
+                                            .then(postResponse => {
+                                                if (postResponse.error) {
+                                                    throw new Error(postResponse.error.message);
+                                                }
+                                                postMetricsTableBody.innerHTML = '';
+                                                const posts = postResponse.data;
+                                                posts.forEach(post => {
+                                                    const likesCount = post.likes?.summary?.total_count || 0;
+                                                    const commentsCount = post.comments?.summary?.total_count || 0;
+                                                    const row = `<tr><td>${post.id}</td><td>${likesCount}</td><td>${commentsCount}</td></tr>`;
+                                                    postMetricsTableBody.innerHTML += row;
+                                                });
+                                                showMetricsStatus('Metrics loaded successfully', 'success');
+                                                retrieveMetricsBtn.disabled = false;
+                                                retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                                            })
+                                            .catch(postError => {
+                                                console.error('Error fetching post metrics:', postError);
+                                                showMetricsStatus(`Error loading post metrics: ${postError.message}. Please check your access token and permissions.`, 'error');
+                                                postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
+                                                retrieveMetricsBtn.disabled = false;
+                                                retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                                            });
+                                    })
+                                    .catch(insightsError => {
+                                        console.error('Error fetching insights:', insightsError);
+                                        showMetricsStatus(`Error loading insights: ${insightsError.message}. Please check your access token and permissions.`, 'error');
+                                        totalImpressions.textContent = 'N/A';
+                                        postEngagements.textContent = 'N/A';
+                                        postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
+                                        retrieveMetricsBtn.disabled = false;
+                                        retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                                    });
                             })
-                            .catch(error => {
-                                console.error('Error fetching post metrics:', error);
-                                showMetricsStatus(`Error loading post metrics: ${error.message}. Please check your access token and permissions.`, 'error');
-                                postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
+                            .catch(demoError => {
+                                console.error('Error fetching demographics:', demoError);
+                                showMetricsStatus(`Error loading demographics: ${demoError.message}. Please check your access token and permissions.`, 'error');
+                                countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
+                                ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
                                 retrieveMetricsBtn.disabled = false;
                                 retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
                             });
                     })
-                    .catch(error => {
-                        console.error('Error fetching metrics:', error);
-                        showMetricsStatus(`Error loading metrics: ${error.message}. Please check your access token, permissions, or page activity.`, 'error');
+                    .catch(pageError => {
+                        console.error('Error fetching page info:', pageError);
+                        showMetricsStatus(`Error loading page info: ${pageError.message}. Please check your access token and permissions.`, 'error');
                         totalFollowers.textContent = 'N/A';
-                        totalImpressions.textContent = 'N/A';
-                        engagedUsers.textContent = 'N/A';
-                        postEngagements.textContent = 'N/A';
-                        countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
-                        ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
-                        postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
                         retrieveMetricsBtn.disabled = false;
                         retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
                     });
@@ -1119,7 +1181,6 @@
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
                 totalFollowers.textContent = 'N/A';
                 totalImpressions.textContent = 'N/A';
-                engagedUsers.textContent = 'N/A';
                 postEngagements.textContent = 'N/A';
                 countryTableBody.innerHTML = '';
                 ageGenderTableBody.innerHTML = '';
