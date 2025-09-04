@@ -53,7 +53,6 @@
             font-size: 1.3rem;
             color: #1877f2;
             margin-bottom: 15px;
-            display: flex;
             align-items: center;
         }
         .card-title i {
@@ -358,7 +357,8 @@
                 <li>Create a Facebook App at <a href="https://developers.facebook.com/" target="_blank">Facebook Developers</a></li>
                 <li>Add "https://localhost" to your App Domains in Facebook App Settings</li>
                 <li>Add "https://localhost" as a Valid OAuth Redirect URI</li>
-                <li>Run this page on a local server (not as a file)</li>
+                <li>Run this page on a local server with HTTPS (e.g., using ngrok)</li>
+                <li>Ensure the app has permissions: pages_show_list, pages_read_engagement, pages_manage_posts, read_insights, pages_read_user_content</li>
             </ol>
         </div>
         
@@ -369,10 +369,10 @@
                 <li>Click "Connect Facebook" to authenticate with OAuth.</li>
                 <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
-                <li>View your page's posts in the "View Posts" tab.</li>
+                <li>View your page's posts with likes and comments in the "View Posts" tab.</li>
                 <li>View page metrics (followers, likes, comments, impressions, etc.) in the "View Metrics" tab (last 28 days).</li>
             </ol>
-            <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
+            <p><strong>Note:</strong> This demo uses localhost for development. For production, use a real HTTPS domain.</p>
         </div>
         
         <div class="tabs">
@@ -689,7 +689,8 @@
                         getPages();
                     })
                     .catch(error => {
-                        showStatus('Error fetching user data: ' + error.message, 'error');
+                        console.error('Error fetching user data:', error);
+                        showStatus(`Error fetching user data: ${error.message}. Please check your App ID and network connection.`, 'error');
                         appIdForm.classList.remove('hidden');
                         connectBtn.classList.add('hidden');
                         connectBtn.disabled = false;
@@ -715,7 +716,8 @@
                         showStatus('Authentication complete! Select a page to manage.', 'success');
                     })
                     .catch(error => {
-                        showStatus('Error fetching pages: ' + error.message, 'error');
+                        console.error('Error fetching pages:', error);
+                        showStatus(`Error fetching pages: ${error.message}. Please check your access token and permissions.`, 'error');
                         appIdForm.classList.remove('hidden');
                         connectBtn.classList.add('hidden');
                     });
@@ -868,7 +870,8 @@
                         postBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Publish Post';
                     })
                     .catch(error => {
-                        showPostStatus('Error posting: ' + error.message, 'error');
+                        console.error('Error posting:', error);
+                        showPostStatus(`Error posting: ${error.message}. Please check your access token and permissions.`, 'error');
                         postBtn.disabled = false;
                         postBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Publish Post';
                     });
@@ -890,6 +893,9 @@
                         return response.json();
                     })
                     .then(response => {
+                        if (response.error) {
+                            throw new Error(response.error.message);
+                        }
                         postsData = response.data;
                         displayPosts(postsData);
                         showRetrieveStatus(`Loaded ${postsData.length} posts`, 'success');
@@ -897,7 +903,8 @@
                         retrieveBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Posts';
                     })
                     .catch(error => {
-                        showRetrieveStatus('Error loading posts: ' + error.message, 'error');
+                        console.error('Error fetching posts:', error);
+                        showRetrieveStatus(`Error loading posts: ${error.message}. Please check your access token and permissions.`, 'error');
                         retrieveBtn.disabled = false;
                         retrieveBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Posts';
                     });
@@ -971,7 +978,7 @@
                 retrieveMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
                 const metrics = [
-                    'page_fan_count', // Total followers
+                    'page_fan_count',
                     'page_impressions',
                     'page_impressions_by_country_unique',
                     'page_impressions_by_age_gender_unique',
@@ -981,10 +988,17 @@
                 
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=${metrics}&period=days_28&access_token=${currentPage.access_token}`)
                     .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
+                            });
+                        }
                         return response.json();
                     })
                     .then(response => {
+                        if (response.error) {
+                            throw new Error(response.error.message);
+                        }
                         const data = response.data;
                         
                         // Total followers
@@ -1038,10 +1052,17 @@
                         // Post-specific metrics (likes and comments)
                         fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
                             .then(response => {
-                                if (!response.ok) throw new Error(`Failed to fetch post metrics: ${response.statusText}`);
+                                if (!response.ok) {
+                                    return response.json().then(err => {
+                                        throw new Error(`HTTP ${response.status}: ${err.error?.message || response.statusText}`);
+                                    });
+                                }
                                 return response.json();
                             })
                             .then(postResponse => {
+                                if (postResponse.error) {
+                                    throw new Error(postResponse.error.message);
+                                }
                                 postMetricsTableBody.innerHTML = '';
                                 const posts = postResponse.data;
                                 posts.forEach(post => {
@@ -1055,14 +1076,23 @@
                                 retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
                             })
                             .catch(error => {
-                                showMetricsStatus('Error loading post metrics: ' + error.message, 'error');
+                                console.error('Error fetching post metrics:', error);
+                                showMetricsStatus(`Error loading post metrics: ${error.message}. Please check your access token and permissions.`, 'error');
                                 postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
                                 retrieveMetricsBtn.disabled = false;
                                 retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
                             });
                     })
                     .catch(error => {
-                        showMetricsStatus('Error loading metrics: ' + error.message, 'error');
+                        console.error('Error fetching metrics:', error);
+                        showMetricsStatus(`Error loading metrics: ${error.message}. Please check your access token, permissions, or page activity.`, 'error');
+                        totalFollowers.textContent = 'N/A';
+                        totalImpressions.textContent = 'N/A';
+                        engagedUsers.textContent = 'N/A';
+                        postEngagements.textContent = 'N/A';
+                        countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
+                        ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
+                        postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
                         retrieveMetricsBtn.disabled = false;
                         retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
                     });
