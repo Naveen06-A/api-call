@@ -332,13 +332,23 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
+        table th, table td {
+            border: 1px solid #dddfe2;
+            padding: 8px;
+            text-align: left;
+        }
+        .post-metrics {
+            margin-top: 10px;
+            color: #65676b;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Facebook Integration Demo</h1>
-            <p class="description">Connect with Facebook to manage your pages and post content</p>
+            <p class="description">Connect with Facebook to manage your pages, post content, and view metrics</p>
         </header>
         
         <div class="warning">
@@ -360,6 +370,7 @@
                 <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
                 <li>View your page's posts in the "View Posts" tab.</li>
+                <li>View page metrics (followers, likes, comments, impressions, etc.) in the "View Metrics" tab (last 28 days).</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
@@ -368,6 +379,7 @@
             <div class="tab active" data-tab="connect">Connect</div>
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
+            <div class="tab" data-tab="metrics">View Metrics</div>
         </div>
         
         <div class="tab-content active" id="connect-tab">
@@ -477,6 +489,48 @@
             </div>
         </div>
         
+        <div class="tab-content" id="metrics-tab">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-bar"></i> Page Metrics</h2>
+                <div class="form-group">
+                    <label for="metricsPageSelect">Selected Page:</label>
+                    <select id="metricsPageSelect" disabled>
+                        <option value="">-- Select a Page --</option>
+                    </select>
+                </div>
+                <button id="retrieveMetricsBtn" class="btn">
+                    <i class="fas fa-sync-alt"></i> Load Metrics
+                </button>
+                <div id="metricsContainer">
+                    <h3 style="margin: 20px 0 10px;">Page Metrics (Last 28 Days)</h3>
+                    <div id="summaryMetrics">
+                        <p><strong>Total Followers:</strong> <span id="totalFollowers">N/A</span></p>
+                        <p><strong>Total Impressions:</strong> <span id="totalImpressions">N/A</span></p>
+                        <p><strong>Engaged Users:</strong> <span id="engagedUsers">N/A</span></p>
+                        <p><strong>Post Engagements:</strong> <span id="postEngagements">N/A</span></p>
+                    </div>
+                    <h4>Country-wise Impressions (Unique)</h4>
+                    <table id="countryTable" style="width:100%; border-collapse: collapse;">
+                        <thead><tr><th>Country</th><th>Impressions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <h4>Age and Gender-wise Impressions (Unique)</h4>
+                    <table id="ageGenderTable" style="width:100%; border-collapse: collapse;">
+                        <thead><tr><th>Age Group</th><th>Gender</th><th>Impressions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <h4>Post-specific Metrics</h4>
+                    <table id="postMetricsTable" style="width:100%; border-collapse: collapse;">
+                        <thead><tr><th>Post ID</th><th>Likes</th><th>Comments</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="metricsStatus" class="status info hidden">
+                    <span id="metricsStatusText"></span>
+                </div>
+            </div>
+        </div>
+        
         <div class="footer">
             <p>This is a demonstration of Facebook integration with OAuth authentication.</p>
         </div>
@@ -497,11 +551,13 @@
             const userIdDisplay = document.getElementById('userIdDisplay');
             const pageSelect = document.getElementById('pageSelect');
             const retrievePageSelect = document.getElementById('retrievePageSelect');
+            const metricsPageSelect = document.getElementById('metricsPageSelect');
             const postContent = document.getElementById('postContent');
             const postBtn = document.getElementById('postBtn');
             const postStatus = document.getElementById('postStatus');
             const postStatusText = document.getElementById('postStatusText');
             const retrieveBtn = document.getElementById('retrieveBtn');
+            const retrieveMetricsBtn = document.getElementById('retrieveMetricsBtn');
             const retrieveStatus = document.getElementById('retrieveStatus');
             const retrieveStatusText = document.getElementById('retrieveStatusText');
             const postsList = document.getElementById('postsList');
@@ -515,6 +571,15 @@
             const mediaPreview = document.getElementById('mediaPreview');
             const pageSelection = document.getElementById('pageSelection');
             const pageList = document.getElementById('pageList');
+            const totalFollowers = document.getElementById('totalFollowers');
+            const totalImpressions = document.getElementById('totalImpressions');
+            const engagedUsers = document.getElementById('engagedUsers');
+            const postEngagements = document.getElementById('postEngagements');
+            const countryTableBody = document.getElementById('countryTable').querySelector('tbody');
+            const ageGenderTableBody = document.getElementById('ageGenderTable').querySelector('tbody');
+            const postMetricsTableBody = document.getElementById('postMetricsTable').querySelector('tbody');
+            const metricsStatus = document.getElementById('metricsStatus');
+            const metricsStatusText = document.getElementById('metricsStatusText');
             
             // State
             let userData = null;
@@ -550,6 +615,7 @@
             logoutBtn.addEventListener('click', logout);
             postBtn.addEventListener('click', createPost);
             retrieveBtn.addEventListener('click', retrievePosts);
+            retrieveMetricsBtn.addEventListener('click', retrieveMetrics);
             postContent.addEventListener('input', updatePostPreview);
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
@@ -598,7 +664,7 @@
                 connectBtn.disabled = true;
                 connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
                 
-                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts&response_type=token`;
+                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights,pages_read_user_content&response_type=token`;
                 window.location.href = authUrl;
             }
             
@@ -681,8 +747,10 @@
                 currentPage = page;
                 pageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 retrievePageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
+                metricsPageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 pageSelect.disabled = false;
                 retrievePageSelect.disabled = false;
+                metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
                 
                 // Update preview with page name
@@ -816,7 +884,7 @@
                 retrieveBtn.disabled = true;
                 retrieveBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments&access_token=${currentPage.access_token}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
                         return response.json();
@@ -874,6 +942,12 @@
                         });
                     }
                     
+                    const metrics = document.createElement('div');
+                    metrics.className = 'post-metrics';
+                    const likesCount = post.likes?.summary?.total_count || 0;
+                    const commentsCount = post.comments?.summary?.total_count || 0;
+                    metrics.textContent = `Likes: ${likesCount} | Comments: ${commentsCount}`;
+                    
                     postEl.appendChild(message);
                     postEl.appendChild(date);
                     
@@ -881,8 +955,117 @@
                         postEl.appendChild(mediaContainer);
                     }
                     
+                    postEl.appendChild(metrics);
                     postsList.appendChild(postEl);
                 });
+            }
+            
+            function retrieveMetrics() {
+                if (!currentPage) {
+                    showMetricsStatus('Please select a page first', 'error');
+                    return;
+                }
+                
+                showMetricsStatus('Loading metrics from Facebook...', 'info');
+                retrieveMetricsBtn.disabled = true;
+                retrieveMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
+                
+                const metrics = [
+                    'page_fan_count', // Total followers
+                    'page_impressions',
+                    'page_impressions_by_country_unique',
+                    'page_impressions_by_age_gender_unique',
+                    'page_engaged_users',
+                    'page_post_engagements'
+                ].join(',');
+                
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=${metrics}&period=days_28&access_token=${currentPage.access_token}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        const data = response.data;
+                        
+                        // Total followers
+                        const followers = data.find(m => m.name === 'page_fan_count');
+                        totalFollowers.textContent = followers ? followers.values[0].value : 'N/A';
+                        
+                        // Total impressions
+                        const impressions = data.find(m => m.name === 'page_impressions');
+                        totalImpressions.textContent = impressions ? impressions.values[0].value : 'N/A';
+                        
+                        // Engaged users
+                        const engaged = data.find(m => m.name === 'page_engaged_users');
+                        engagedUsers.textContent = engaged ? engaged.values[0].value : 'N/A';
+                        
+                        // Post engagements
+                        const engagements = data.find(m => m.name === 'page_post_engagements');
+                        postEngagements.textContent = engagements ? engagements.values[0].value : 'N/A';
+                        
+                        // Country-wise impressions
+                        const countryData = data.find(m => m.name === 'page_impressions_by_country_unique');
+                        if (countryData) {
+                            const countries = countryData.values[0].value;
+                            countryTableBody.innerHTML = '';
+                            Object.entries(countries).sort((a, b) => b[1] - a[1]).forEach(([country, value]) => {
+                                const row = `<tr><td>${country}</td><td>${value}</td></tr>`;
+                                countryTableBody.innerHTML += row;
+                            });
+                        } else {
+                            countryTableBody.innerHTML = '<tr><td colspan="2">No country data available</td></tr>';
+                        }
+                        
+                        // Age and gender-wise impressions
+                        const ageGenderData = data.find(m => m.name === 'page_impressions_by_age_gender_unique');
+                        if (ageGenderData) {
+                            const ag = ageGenderData.values[0].value;
+                            ageGenderTableBody.innerHTML = '';
+                            Object.entries(ag).sort((a, b) => {
+                                const age1 = a[0].split('.')[1];
+                                const age2 = b[0].split('.')[1];
+                                return age1.localeCompare(age2);
+                            }).forEach(([key, value]) => {
+                                const [gender, age] = key.split('.');
+                                const genderLabel = gender === 'M' ? 'Male' : gender === 'F' ? 'Female' : 'Unknown';
+                                const row = `<tr><td>${age}</td><td>${genderLabel}</td><td>${value}</td></tr>`;
+                                ageGenderTableBody.innerHTML += row;
+                            });
+                        } else {
+                            ageGenderTableBody.innerHTML = '<tr><td colspan="3">No age/gender data available</td></tr>';
+                        }
+                        
+                        // Post-specific metrics (likes and comments)
+                        fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,likes.summary(true),comments.summary(true)&access_token=${currentPage.access_token}`)
+                            .then(response => {
+                                if (!response.ok) throw new Error(`Failed to fetch post metrics: ${response.statusText}`);
+                                return response.json();
+                            })
+                            .then(postResponse => {
+                                postMetricsTableBody.innerHTML = '';
+                                const posts = postResponse.data;
+                                posts.forEach(post => {
+                                    const likesCount = post.likes?.summary?.total_count || 0;
+                                    const commentsCount = post.comments?.summary?.total_count || 0;
+                                    const row = `<tr><td>${post.id}</td><td>${likesCount}</td><td>${commentsCount}</td></tr>`;
+                                    postMetricsTableBody.innerHTML += row;
+                                });
+                                showMetricsStatus('Metrics loaded successfully', 'success');
+                                retrieveMetricsBtn.disabled = false;
+                                retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                            })
+                            .catch(error => {
+                                showMetricsStatus('Error loading post metrics: ' + error.message, 'error');
+                                postMetricsTableBody.innerHTML = '<tr><td colspan="3">No post metrics available</td></tr>';
+                                retrieveMetricsBtn.disabled = false;
+                                retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                            });
+                    })
+                    .catch(error => {
+                        showMetricsStatus('Error loading metrics: ' + error.message, 'error');
+                        retrieveMetricsBtn.disabled = false;
+                        retrieveMetricsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Metrics';
+                    });
             }
             
             function logout() {
@@ -904,6 +1087,13 @@
                 mediaFile.value = '';
                 previewMedia.innerHTML = '';
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
+                totalFollowers.textContent = 'N/A';
+                totalImpressions.textContent = 'N/A';
+                engagedUsers.textContent = 'N/A';
+                postEngagements.textContent = 'N/A';
+                countryTableBody.innerHTML = '';
+                ageGenderTableBody.innerHTML = '';
+                postMetricsTableBody.innerHTML = '';
                 appIdInput.value = '';
                 
                 showStatus('Logged out successfully', 'info');
@@ -926,6 +1116,12 @@
                 retrieveStatusText.textContent = message;
                 retrieveStatus.className = `status ${type}`;
                 retrieveStatus.classList.remove('hidden');
+            }
+            
+            function showMetricsStatus(message, type) {
+                metricsStatusText.textContent = message;
+                metricsStatus.className = `status ${type}`;
+                metricsStatus.classList.remove('hidden');
             }
         });
     </script>
