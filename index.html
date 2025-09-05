@@ -1196,11 +1196,11 @@
                     showMetricsStatus('Please select a page first', 'error');
                     return;
                 }
-               
+
                 showMetricsStatus('Loading page metrics...', 'info');
                 loadMetricsBtn.disabled = true;
                 loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
-               
+
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=page_fans,page_impressions,page_post_engagements&period=day&date_preset=last_14d&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -1208,57 +1208,75 @@
                     })
                     .then(response => {
                         if (response.error) throw new Error(response.error.message);
-                        const data = response.data;
-                        const fans = data.find(m => m.name === 'page_fans').values;
-                        const impressions = data.find(m => m.name === 'page_impressions').values;
-                        const engagements = data.find(m => m.name === 'page_post_engagements').values;
-                       
+
+                        const data = response.data || [];
+                        if (data.length === 0) {
+                            throw new Error('No metrics data available for this page');
+                        }
+
+                        // Extract metrics data
+                        const fans = data.find(m => m.name === 'page_fans')?.values || [];
+                        const impressions = data.find(m => m.name === 'page_impressions')?.values || [];
+                        const engagements = data.find(m => m.name === 'page_post_engagements')?.values || [];
+
+                        if (!fans.length || !impressions.length || !engagements.length) {
+                            throw new Error('Incomplete metrics data received');
+                        }
+
                         const num_days = impressions.length;
+                        if (num_days < 7) {
+                            throw new Error('Insufficient data for the last 14 days');
+                        }
+
                         const half = Math.floor(num_days / 2);
-                       
-                        let prev_impressions = 0;
-                        for (let i = 0; i < half; i++) prev_impressions += impressions[i].value;
-                        let curr_impressions = 0;
-                        for (let i = half; i < num_days; i++) curr_impressions += impressions[i].value;
-                       
-                        let prev_engagements = 0;
-                        for (let i = 0; i < half; i++) prev_engagements += engagements[i].value;
-                        let curr_engagements = 0;
-                        for (let i = half; i < num_days; i++) curr_engagements += engagements[i].value;
-                       
-                        const curr_followers = fans[num_days - 1].value;
-                        const prev_followers = fans[half - 1].value;
+
+                        // Calculate followers
+                        const curr_followers = fans[num_days - 1]?.value || 0;
+                        const prev_followers = fans[half - 1]?.value || 0;
                         const followers_change = prev_followers > 0 ? ((curr_followers - prev_followers) / prev_followers * 100).toFixed(1) : 0;
                         const change_sign_f = followers_change >= 0 ? '+' : '';
                         const class_f = followers_change >= 0 ? 'positive' : 'negative';
-                       
+
+                        // Calculate reach (impressions)
+                        let prev_impressions = 0;
+                        for (let i = 0; i < half; i++) prev_impressions += impressions[i]?.value || 0;
+                        let curr_impressions = 0;
+                        for (let i = half; i < num_days; i++) curr_impressions += impressions[i]?.value || 0;
                         const reach_change = prev_impressions > 0 ? ((curr_impressions - prev_impressions) / prev_impressions * 100).toFixed(1) : 0;
                         const change_sign_r = reach_change >= 0 ? '+' : '';
                         const class_r = reach_change >= 0 ? 'positive' : 'negative';
-                       
+
+                        // Calculate engagement rate
+                        let prev_engagements = 0;
+                        for (let i = 0; i < half; i++) prev_engagements += engagements[i]?.value || 0;
+                        let curr_engagements = 0;
+                        for (let i = half; i < num_days; i++) curr_engagements += engagements[i]?.value || 0;
                         const curr_rate = curr_impressions > 0 ? (curr_engagements / curr_impressions * 100).toFixed(1) : 0;
                         const prev_rate = prev_impressions > 0 ? (prev_engagements / prev_impressions * 100).toFixed(1) : 0;
                         const engagement_change = prev_rate > 0 ? ((curr_rate - prev_rate) / prev_rate * 100).toFixed(1) : 0;
                         const change_sign_e = engagement_change >= 0 ? '+' : '';
                         const class_e = engagement_change >= 0 ? 'positive' : 'negative';
-                       
+
+                        // Update DOM elements
                         followersCount.textContent = curr_followers.toLocaleString();
                         followersChange.textContent = `${change_sign_f}${followers_change}% from last week`;
                         followersChange.className = `metrics-change ${class_f}`;
-                       
+
                         reachCount.textContent = curr_impressions.toLocaleString();
                         reachChange.textContent = `${change_sign_r}${reach_change}% from last week`;
                         reachChange.className = `metrics-change ${class_r}`;
-                       
+
                         engagementCount.textContent = `${curr_rate}%`;
                         engagementChange.textContent = `${change_sign_e}${engagement_change}% from last week`;
                         engagementChange.className = `metrics-change ${class_e}`;
-                       
-                        const chart_data = impressions.slice(-7).map(v => v.value);
+
+                        // Generate chart data for the last 7 days
+                        const chart_data = impressions.slice(-7).map(v => v.value || 0);
                         generateChartData(chart_data);
-                       
+
+                        // Generate top posts
                         generateTopPosts();
-                       
+
                         metricsContainer.classList.remove('hidden');
                         showMetricsStatus('Metrics loaded successfully', 'success');
                         loadMetricsBtn.disabled = false;
@@ -1269,6 +1287,7 @@
                         loadMetricsBtn.disabled = false;
                         loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
                     });
+
             }
            
             function generateChartData(chart_data) {
