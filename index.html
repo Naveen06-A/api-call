@@ -474,7 +474,7 @@
             <h1>Facebook Integration Demo with Metrics</h1>
             <p class="description">Connect with Facebook to manage your pages, post content, and view metrics</p>
         </header>
-        
+       
         <div class="warning">
             <div class="warning-title">Important Setup Instructions:</div>
             <p>For this demo to work properly, you must:</p>
@@ -485,7 +485,7 @@
                 <li>Run this page on a local server (not as a file)</li>
             </ol>
         </div>
-        
+       
         <div class="instructions">
             <h3>How to Use This Demo:</h3>
             <ol>
@@ -498,14 +498,14 @@
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
-        
+       
         <div class="tabs">
             <div class="tab active" data-tab="connect">Connect</div>
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
             <div class="tab" data-tab="metrics">Metrics</div>
         </div>
-        
+       
         <div class="tab-content active" id="connect-tab">
             <div class="card">
                 <h2 class="card-title"><i class="fab fa-facebook"></i> Facebook Connection</h2>
@@ -540,7 +540,7 @@
                 </div>
             </div>
         </div>
-        
+       
         <div class="tab-content" id="post-tab">
             <div class="two-column">
                 <div class="card">
@@ -599,7 +599,7 @@
                 </div>
             </div>
         </div>
-        
+       
         <div class="tab-content" id="posts-tab">
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-history"></i> Your Posts</h2>
@@ -623,7 +623,7 @@
                 </div>
             </div>
         </div>
-        
+       
         <div class="tab-content" id="metrics-tab">
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-chart-line"></i> Page Metrics</h2>
@@ -636,10 +636,10 @@
                 <button id="loadMetricsBtn" class="btn">
                     <i class="fas fa-chart-bar"></i> Load Metrics
                 </button>
-                
+               
                 <div id="metricsContainer" class="hidden">
                     <h3 style="margin: 20px 0 10px;">Page Insights</h3>
-                    
+                   
                     <div class="three-column">
                         <div class="metrics-card">
                             <i class="fas fa-users fa-2x"></i>
@@ -647,14 +647,14 @@
                             <div class="metrics-label">Total Followers</div>
                             <div class="metrics-change positive" id="followersChange">+0% from last week</div>
                         </div>
-                        
+                       
                         <div class="metrics-card">
                             <i class="fas fa-eye fa-2x"></i>
                             <div class="metrics-value" id="reachCount">0</div>
                             <div class="metrics-label">Post Reach</div>
                             <div class="metrics-change positive" id="reachChange">+0% from last week</div>
                         </div>
-                        
+                       
                         <div class="metrics-card">
                             <i class="fas fa-user-check fa-2x"></i>
                             <div class="metrics-value" id="engagementCount">0</div>
@@ -662,7 +662,7 @@
                             <div class="metrics-change positive" id="engagementChange">+0% from last week</div>
                         </div>
                     </div>
-                    
+                   
                     <div class="chart-container" id="metricsChart">
                         <div class="chart-labels">
                             <div class="chart-label">Mon</div>
@@ -674,19 +674,19 @@
                             <div class="chart-label">Sun</div>
                         </div>
                     </div>
-                    
+                   
                     <h3 style="margin: 30px 0 15px;">Top Performing Posts</h3>
                     <div id="topPostsList">
                         <p class="description">Top posts will appear here</p>
                     </div>
                 </div>
-                
+               
                 <div id="metricsStatus" class="status info hidden">
                     <span id="metricsStatusText"></span>
                 </div>
             </div>
         </div>
-        
+       
         <div class="footer">
             <p>This is a demonstration of Facebook integration with OAuth authentication and metrics.</p>
         </div>
@@ -738,7 +738,7 @@
             const engagementChange = document.getElementById('engagementChange');
             const metricsChart = document.getElementById('metricsChart');
             const topPostsList = document.getElementById('topPostsList');
-            
+           
             // State
             let userData = null;
             let pages = [];
@@ -747,11 +747,11 @@
             let selectedMedia = null;
             let accessToken = '';
             let APP_ID = '';
-            
+           
             // Configuration - Using localhost for development
             const REDIRECT_URI = window.location.origin;
             const FB_API_VERSION = 'v19.0';
-            
+           
             // Tab functionality
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -766,7 +766,7 @@
                     });
                 });
             });
-            
+           
             // Event Listeners
             submitAppIdBtn.addEventListener('click', submitAppId);
             connectBtn.addEventListener('click', startOAuthFlow);
@@ -777,10 +777,10 @@
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
             loadMetricsBtn.addEventListener('click', loadMetrics);
-            
+           
             // Check for OAuth response in URL
             checkOAuthResponse();
-            
+           
             function submitAppId() {
                 APP_ID = appIdInput.value.trim();
                 if (!APP_ID || !/^\d+$/.test(APP_ID)) {
@@ -791,19 +791,19 @@
                 connectBtn.classList.remove('hidden');
                 showStatus('App ID submitted. Click "Connect Facebook" to authenticate.', 'success');
             }
-            
+           
             function checkOAuthResponse() {
                 const urlParams = new URLSearchParams(window.location.hash.substr(1));
                 const token = urlParams.get('access_token');
                 const error = urlParams.get('error_description');
-                
+               
                 if (error) {
                     showStatus('Authentication failed: ' + decodeURIComponent(error), 'error');
                     appIdForm.classList.remove('hidden');
                     connectBtn.classList.add('hidden');
                     return;
                 }
-                
+               
                 if (token) {
                     accessToken = token;
                     showStatus('Successfully authenticated! Fetching user data...', 'info');
@@ -811,21 +811,21 @@
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             }
-            
+           
             function startOAuthFlow() {
                 if (!APP_ID) {
                     showStatus('Please submit a valid App ID first', 'error');
                     return;
                 }
-                
+               
                 showStatus('Redirecting to Facebook for authentication...', 'info');
                 connectBtn.disabled = true;
                 connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
-                
+               
                 const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights&response_type=token`;
                 window.location.href = authUrl;
             }
-            
+           
             function getUserData() {
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/me?fields=id,name,email,picture&access_token=${accessToken}`)
                     .then(response => {
@@ -836,11 +836,11 @@
                         userData = user;
                         userName.textContent = userData.name;
                         userIdDisplay.textContent = `User ID: ${userData.id}`;
-                        
+                       
                         if (userData.picture && userData.picture.data.url) {
                             userAvatar.innerHTML = `<img src="${userData.picture.data.url}" alt="User Avatar" style="width: 100%; height: 100%; border-radius: 50%;">`;
                         }
-                        
+                       
                         userInfo.classList.remove('hidden');
                         appIdForm.classList.add('hidden');
                         connectBtn.classList.add('hidden');
@@ -854,7 +854,7 @@
                         connectBtn.innerHTML = '<i class="fab fa-facebook"></i> Connect Facebook';
                     });
             }
-            
+           
             function getPages() {
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/accounts?access_token=${accessToken}`)
                     .then(response => {
@@ -863,12 +863,12 @@
                     })
                     .then(response => {
                         pages = response.data;
-                        
+                       
                         if (pages.length === 0) {
                             showStatus('No pages found for this account. Please ensure you have admin access to at least one page.', 'error');
                             return;
                         }
-                        
+                       
                         showPagesSelection();
                         showStatus('Authentication complete! Select a page to manage.', 'success');
                     })
@@ -878,11 +878,11 @@
                         connectBtn.classList.add('hidden');
                     });
             }
-            
+           
             function showPagesSelection() {
                 pageSelection.classList.remove('hidden');
                 pageList.innerHTML = '';
-                
+               
                 pages.forEach(page => {
                     const pageItem = document.createElement('div');
                     pageItem.className = 'page-item';
@@ -890,17 +890,17 @@
                         <div class="page-name">${page.name}</div>
                         <div class="page-category">${page.category}</div>
                     `;
-                    
+                   
                     pageItem.addEventListener('click', () => {
                         document.querySelectorAll('.page-item').forEach(item => item.classList.remove('selected'));
                         pageItem.classList.add('selected');
                         selectPage(page);
                     });
-                    
+                   
                     pageList.appendChild(pageItem);
                 });
             }
-            
+           
             function selectPage(page) {
                 currentPage = page;
                 pageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
@@ -910,21 +910,21 @@
                 retrievePageSelect.disabled = false;
                 metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
-                
+               
                 // Update preview with page name
                 previewPageName.textContent = page.name;
-                
+               
                 document.querySelector('[data-tab="post"]').click();
             }
-            
+           
             function handleMediaUpload(event) {
                 const file = event.target.files[0];
                 if (!file) return;
-                
+               
                 selectedMedia = file;
                 mediaPreview.classList.remove('hidden');
                 mediaPreview.innerHTML = '';
-                
+               
                 if (file.type.startsWith('image/')) {
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
@@ -935,20 +935,20 @@
                     video.controls = true;
                     mediaPreview.appendChild(video);
                 }
-                
+               
                 updatePostPreview();
             }
-            
+           
             function updatePostPreview() {
                 const content = postContent.value.trim();
                 previewContent.textContent = content || 'Your post content will appear here...';
-                
+               
                 if (currentPage) {
                     previewPageName.textContent = currentPage.name;
                 }
-                
+               
                 previewMedia.innerHTML = '';
-                
+               
                 if (selectedMedia) {
                     if (selectedMedia.type.startsWith('image/')) {
                         const img = document.createElement('img');
@@ -963,34 +963,34 @@
                         previewMedia.appendChild(video);
                     }
                 }
-                
+               
                 postBtn.disabled = !content && !selectedMedia;
             }
-            
+           
             function createPost() {
                 if (!currentPage) {
                     showPostStatus('Please select a page first', 'error');
                     return;
                 }
-                
+               
                 const content = postContent.value.trim();
                 if (!content && !selectedMedia) {
                     showPostStatus('Please enter content or upload media', 'error');
                     return;
                 }
-                
+               
                 showPostStatus('Publishing post to Facebook...', 'info');
                 postBtn.disabled = true;
                 postBtn.innerHTML = '<span class="loading"></span> Publishing...';
-                
+               
                 const formData = new FormData();
                 if (content) {
                     formData.append('message', content);
                 }
                 formData.append('access_token', currentPage.access_token);
-                
+               
                 let url = `https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed`;
-                
+               
                 if (selectedMedia) {
                     if (selectedMedia.type.startsWith('image/')) {
                         url = `https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/photos`;
@@ -1000,7 +1000,7 @@
                         formData.append('filedata', selectedMedia);
                     }
                 }
-                
+               
                 fetch(url, {
                     method: 'POST',
                     body: formData
@@ -1013,7 +1013,7 @@
                         if (response.error) {
                             throw new Error(response.error.message);
                         }
-                        
+                       
                         showPostStatus('Successfully posted to your page!', 'success');
                         postContent.value = '';
                         selectedMedia = null;
@@ -1031,18 +1031,18 @@
                         postBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Publish Post';
                     });
             }
-            
+           
             function retrievePosts() {
                 if (!currentPage) {
                     showRetrieveStatus('Please select a page first', 'error');
                     return;
                 }
-                
+               
                 showRetrieveStatus('Loading posts from Facebook...', 'info');
                 retrieveBtn.disabled = true;
                 retrieveBtn.innerHTML = '<span class="loading"></span> Loading...';
-                
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,message,created_time,attachments,likes.limit(1).summary(true),comments.limit(1).summary(true),shares&access_token=${currentPage.access_token}`)
+               
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,message,created_time,attachments{type,media{image{src},source}},likes.summary(true),comments.summary(true).limit(5){from{name},message,created_time,likes.summary(true)},shares&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
                         return response.json();
@@ -1060,57 +1060,58 @@
                         retrieveBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Posts';
                     });
             }
-            
+           
             function displayPosts(posts) {
                 postsList.innerHTML = '';
-                
+               
                 if (posts.length === 0) {
                     postsList.innerHTML = '<p class="description">No posts found for this page</p>';
                     return;
                 }
-                
+               
                 // Sort posts by date (newest first)
                 posts.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
-                
+               
                 posts.forEach(post => {
                     const postEl = document.createElement('div');
                     postEl.className = 'post';
-                    
+                   
                     const message = document.createElement('div');
                     message.className = 'post-message';
                     message.textContent = post.message || '(No text content)';
-                    
+                   
                     const date = document.createElement('div');
                     date.className = 'post-date';
                     date.textContent = new Date(post.created_time).toLocaleString();
-                    
+                   
                     const mediaContainer = document.createElement('div');
                     mediaContainer.className = 'post-media';
-                    
+                   
                     if (post.attachments && post.attachments.data) {
                         post.attachments.data.forEach(attachment => {
-                            if (attachment.media && attachment.media.image) {
-                                const img = document.createElement('img');
-                                img.src = attachment.media.image.src;
-                                mediaContainer.appendChild(img);
-                            } else if (attachment.media && attachment.media.source) {
-                                const video = document.createElement('video');
-                                video.src = attachment.media.source;
-                                video.controls = true;
-                                video.style.maxWidth = '100%';
-                                mediaContainer.appendChild(video);
+                            if (attachment.media) {
+                                if (attachment.type.includes('video')) {
+                                    const video = document.createElement('video');
+                                    video.src = attachment.media.source;
+                                    video.controls = true;
+                                    mediaContainer.appendChild(video);
+                                } else {
+                                    const img = document.createElement('img');
+                                    img.src = attachment.media.image.src;
+                                    mediaContainer.appendChild(img);
+                                }
                             }
                         });
                     }
-                    
+                   
                     // Add metrics section
                     const metricsContainer = document.createElement('div');
                     metricsContainer.className = 'post-metrics';
-                    
+                   
                     const likesCount = post.likes && post.likes.summary ? post.likes.summary.total_count : 0;
                     const commentsCount = post.comments && post.comments.summary ? post.comments.summary.total_count : 0;
                     const sharesCount = post.shares && post.shares.count ? post.shares.count : 0;
-                    
+                   
                     metricsContainer.innerHTML = `
                         <div class="post-metric likes-metric">
                             <i class="fas fa-thumbs-up"></i> ${likesCount} likes
@@ -1122,146 +1123,217 @@
                             <i class="fas fa-share"></i> ${sharesCount} shares
                         </div>
                     `;
-                    
+                   
                     // Add comments section
                     const commentsSection = document.createElement('div');
                     commentsSection.className = 'comments-section';
-                    
-                    if (commentsCount > 0) {
+                   
+                    if (post.comments && post.comments.data && post.comments.data.length > 0) {
                         const commentsTitle = document.createElement('h4');
                         commentsTitle.textContent = 'Recent Comments:';
                         commentsSection.appendChild(commentsTitle);
-                        
-                        // In a real app, we would fetch the actual comments here
-                        // For demo purposes, we'll just show a placeholder
-                        const commentPlaceholder = document.createElement('p');
-                        commentPlaceholder.className = 'description';
-                        commentPlaceholder.textContent = 'Comments would be displayed here in a full implementation';
-                        commentsSection.appendChild(commentPlaceholder);
+                       
+                        post.comments.data.forEach(comment => {
+                            const commentEl = document.createElement('div');
+                            commentEl.className = 'comment';
+                           
+                            const header = document.createElement('div');
+                            header.className = 'comment-header';
+                           
+                            const avatar = document.createElement('div');
+                            avatar.className = 'comment-avatar';
+                            const authorName = comment.from.name || 'Anonymous';
+                            avatar.textContent = authorName.charAt(0).toUpperCase();
+                           
+                            const author = document.createElement('div');
+                            author.className = 'comment-author';
+                            author.textContent = authorName;
+                           
+                            const commentDate = document.createElement('div');
+                            commentDate.className = 'comment-date';
+                            commentDate.textContent = new Date(comment.created_time).toLocaleString();
+                           
+                            header.appendChild(avatar);
+                            header.appendChild(author);
+                            header.appendChild(commentDate);
+                           
+                            const commentMessage = document.createElement('div');
+                            commentMessage.className = 'comment-message';
+                            commentMessage.textContent = comment.message;
+                           
+                            const commentLikes = document.createElement('div');
+                            commentLikes.className = 'comment-likes';
+                            const commentLikesCount = comment.likes && comment.likes.summary ? comment.likes.summary.total_count : 0;
+                            commentLikes.innerHTML = `<i class="fas fa-heart"></i> ${commentLikesCount} likes`;
+                           
+                            commentEl.appendChild(header);
+                            commentEl.appendChild(commentMessage);
+                            commentEl.appendChild(commentLikes);
+                           
+                            commentsSection.appendChild(commentEl);
+                        });
                     }
-                    
+                   
                     postEl.appendChild(message);
                     postEl.appendChild(date);
-                    
+                   
                     if (mediaContainer.children.length > 0) {
                         postEl.appendChild(mediaContainer);
                     }
-                    
+                   
                     postEl.appendChild(metricsContainer);
-                    
+                   
                     if (commentsCount > 0) {
                         postEl.appendChild(commentsSection);
                     }
-                    
+                   
                     postsList.appendChild(postEl);
                 });
             }
-            
+           
             function loadMetrics() {
                 if (!currentPage) {
                     showMetricsStatus('Please select a page first', 'error');
                     return;
                 }
-                
+               
                 showMetricsStatus('Loading page metrics...', 'info');
                 loadMetricsBtn.disabled = true;
                 loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
-                
-                // In a real implementation, we would fetch actual metrics from Facebook Graph API
-                // For demo purposes, we'll simulate data
-                setTimeout(() => {
-                    // Simulate metrics data
-                    const followers = Math.floor(Math.random() * 10000) + 500;
-                    const reach = Math.floor(Math.random() * 5000) + 200;
-                    const engagement = (Math.random() * 10 + 5).toFixed(1);
-                    
-                    followersCount.textContent = followers.toLocaleString();
-                    reachCount.textContent = reach.toLocaleString();
-                    engagementCount.textContent = engagement + '%';
-                    
-                    followersChange.textContent = `+${Math.floor(Math.random() * 10) + 1}% from last week`;
-                    reachChange.textContent = `+${Math.floor(Math.random() * 15) + 1}% from last week`;
-                    engagementChange.textContent = `+${Math.floor(Math.random() * 5) + 1}% from last week`;
-                    
-                    // Generate chart data
-                    generateChartData();
-                    
-                    // Generate top posts
-                    generateTopPosts();
-                    
-                    metricsContainer.classList.remove('hidden');
-                    showMetricsStatus('Metrics loaded successfully', 'success');
-                    loadMetricsBtn.disabled = false;
-                    loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
-                }, 1500);
+               
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=page_fans,page_impressions,page_post_engagements&period=day&date_preset=last_14d&access_token=${currentPage.access_token}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        if (response.error) throw new Error(response.error.message);
+                        const data = response.data;
+                        const fans = data.find(m => m.name === 'page_fans').values;
+                        const impressions = data.find(m => m.name === 'page_impressions').values;
+                        const engagements = data.find(m => m.name === 'page_post_engagements').values;
+                       
+                        const num_days = impressions.length;
+                        const half = Math.floor(num_days / 2);
+                       
+                        let prev_impressions = 0;
+                        for (let i = 0; i < half; i++) prev_impressions += impressions[i].value;
+                        let curr_impressions = 0;
+                        for (let i = half; i < num_days; i++) curr_impressions += impressions[i].value;
+                       
+                        let prev_engagements = 0;
+                        for (let i = 0; i < half; i++) prev_engagements += engagements[i].value;
+                        let curr_engagements = 0;
+                        for (let i = half; i < num_days; i++) curr_engagements += engagements[i].value;
+                       
+                        const curr_followers = fans[num_days - 1].value;
+                        const prev_followers = fans[half - 1].value;
+                        const followers_change = prev_followers > 0 ? ((curr_followers - prev_followers) / prev_followers * 100).toFixed(1) : 0;
+                        const change_sign_f = followers_change >= 0 ? '+' : '';
+                        const class_f = followers_change >= 0 ? 'positive' : 'negative';
+                       
+                        const reach_change = prev_impressions > 0 ? ((curr_impressions - prev_impressions) / prev_impressions * 100).toFixed(1) : 0;
+                        const change_sign_r = reach_change >= 0 ? '+' : '';
+                        const class_r = reach_change >= 0 ? 'positive' : 'negative';
+                       
+                        const curr_rate = curr_impressions > 0 ? (curr_engagements / curr_impressions * 100).toFixed(1) : 0;
+                        const prev_rate = prev_impressions > 0 ? (prev_engagements / prev_impressions * 100).toFixed(1) : 0;
+                        const engagement_change = prev_rate > 0 ? ((curr_rate - prev_rate) / prev_rate * 100).toFixed(1) : 0;
+                        const change_sign_e = engagement_change >= 0 ? '+' : '';
+                        const class_e = engagement_change >= 0 ? 'positive' : 'negative';
+                       
+                        followersCount.textContent = curr_followers.toLocaleString();
+                        followersChange.textContent = `${change_sign_f}${followers_change}% from last week`;
+                        followersChange.className = `metrics-change ${class_f}`;
+                       
+                        reachCount.textContent = curr_impressions.toLocaleString();
+                        reachChange.textContent = `${change_sign_r}${reach_change}% from last week`;
+                        reachChange.className = `metrics-change ${class_r}`;
+                       
+                        engagementCount.textContent = `${curr_rate}%`;
+                        engagementChange.textContent = `${change_sign_e}${engagement_change}% from last week`;
+                        engagementChange.className = `metrics-change ${class_e}`;
+                       
+                        const chart_data = impressions.slice(-7).map(v => v.value);
+                        generateChartData(chart_data);
+                       
+                        generateTopPosts();
+                       
+                        metricsContainer.classList.remove('hidden');
+                        showMetricsStatus('Metrics loaded successfully', 'success');
+                        loadMetricsBtn.disabled = false;
+                        loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
+                    })
+                    .catch(error => {
+                        showMetricsStatus('Error loading metrics: ' + error.message, 'error');
+                        loadMetricsBtn.disabled = false;
+                        loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
+                    });
             }
-            
-            function generateChartData() {
-                // Clear existing chart
+           
+            function generateChartData(chart_data) {
                 const chartBars = metricsChart.querySelectorAll('.chart-bar');
                 chartBars.forEach(bar => bar.remove());
-                
-                // Generate random data for the chart
-                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                const maxHeight = 180; // Maximum height in pixels
-                
-                days.forEach((day, index) => {
-                    const value = Math.floor(Math.random() * 100) + 20;
-                    const height = (value / 100) * maxHeight;
-                    
+               
+                const max_value = Math.max(...chart_data, 1); // avoid division by zero
+                const max_height = 180;
+               
+                chart_data.forEach((value, index) => {
+                    const height = (value / max_value) * max_height;
+                   
                     const bar = document.createElement('div');
                     bar.className = 'chart-bar';
                     bar.style.height = `${height}px`;
                     bar.style.left = `${(index * 45) + 10}px`;
-                    
+                   
                     metricsChart.appendChild(bar);
                 });
             }
-            
+           
             function generateTopPosts() {
                 // Clear existing top posts
                 topPostsList.innerHTML = '';
-                
+               
                 if (postsData.length === 0) {
                     topPostsList.innerHTML = '<p class="description">No posts available to analyze</p>';
                     return;
                 }
-                
+               
                 // Sort posts by engagement (likes + comments + shares)
                 const sortedPosts = [...postsData].sort((a, b) => {
                     const aLikes = a.likes && a.likes.summary ? a.likes.summary.total_count : 0;
                     const aComments = a.comments && a.comments.summary ? a.comments.summary.total_count : 0;
                     const aShares = a.shares && a.shares.count ? a.shares.count : 0;
                     const aEngagement = aLikes + aComments + aShares;
-                    
+                   
                     const bLikes = b.likes && b.likes.summary ? b.likes.summary.total_count : 0;
                     const bComments = b.comments && b.comments.summary ? b.comments.summary.total_count : 0;
                     const bShares = b.shares && b.shares.count ? b.shares.count : 0;
                     const bEngagement = bLikes + bComments + bShares;
-                    
+                   
                     return bEngagement - aEngagement;
                 });
-                
+               
                 // Show top 3 posts
                 const topPosts = sortedPosts.slice(0, 3);
-                
+               
                 topPosts.forEach(post => {
                     const postEl = document.createElement('div');
                     postEl.className = 'post';
-                    
+                   
                     const message = document.createElement('div');
                     message.className = 'post-message';
                     message.textContent = post.message ? (post.message.length > 100 ? post.message.substring(0, 100) + '...' : post.message) : '(No text content)';
-                    
+                   
                     const date = document.createElement('div');
                     date.className = 'post-date';
                     date.textContent = new Date(post.created_time).toLocaleString();
-                    
+                   
                     const likesCount = post.likes && post.likes.summary ? post.likes.summary.total_count : 0;
                     const commentsCount = post.comments && post.comments.summary ? post.comments.summary.total_count : 0;
                     const sharesCount = post.shares && post.shares.count ? post.shares.count : 0;
                     const totalEngagement = likesCount + commentsCount + sharesCount;
-                    
+                   
                     const metricsContainer = document.createElement('div');
                     metricsContainer.className = 'post-metrics';
                     metricsContainer.innerHTML = `
@@ -1278,15 +1350,15 @@
                             Total: ${totalEngagement}
                         </div>
                     `;
-                    
+                   
                     postEl.appendChild(message);
                     postEl.appendChild(date);
                     postEl.appendChild(metricsContainer);
-                    
+                   
                     topPostsList.appendChild(postEl);
                 });
             }
-            
+           
             function logout() {
                 userData = null;
                 pages = [];
@@ -1295,7 +1367,7 @@
                 selectedMedia = null;
                 accessToken = '';
                 APP_ID = '';
-                
+               
                 userInfo.classList.add('hidden');
                 appIdForm.classList.remove('hidden');
                 connectBtn.classList.add('hidden');
@@ -1308,29 +1380,29 @@
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
                 appIdInput.value = '';
                 metricsContainer.classList.add('hidden');
-                
+               
                 showStatus('Logged out successfully', 'info');
                 document.querySelector('[data-tab="connect"]').click();
             }
-            
+           
             function showStatus(message, type) {
                 statusText.textContent = message;
                 status.className = `status ${type}`;
                 status.classList.remove('hidden');
             }
-            
+           
             function showPostStatus(message, type) {
                 postStatusText.textContent = message;
                 postStatus.className = `status ${type}`;
                 postStatus.classList.remove('hidden');
             }
-            
+           
             function showRetrieveStatus(message, type) {
                 retrieveStatusText.textContent = message;
                 retrieveStatus.className = `status ${type}`;
                 retrieveStatus.classList.remove('hidden');
             }
-            
+           
             function showMetricsStatus(message, type) {
                 metricsStatusText.textContent = message;
                 metricsStatus.className = `status ${type}`;
