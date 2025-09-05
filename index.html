@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Integration Demo</title>
+    <title>Facebook Integration Demo with Metrics</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -20,7 +20,7 @@
             min-height: 100vh;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -244,8 +244,13 @@
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
         @media (max-width: 768px) {
-            .two-column {
+            .two-column, .three-column {
                 grid-template-columns: 1fr;
             }
         }
@@ -332,13 +337,142 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
+        .metrics-card {
+            background: #f7f8fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .metrics-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1877f2;
+            margin: 10px 0;
+        }
+        .metrics-label {
+            color: #65676b;
+            font-size: 0.9rem;
+        }
+        .metrics-change {
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        .positive {
+            color: #42b883;
+        }
+        .negative {
+            color: #f02849;
+        }
+        .comments-section {
+            margin-top: 15px;
+            border-top: 1px solid #dddfe2;
+            padding-top: 15px;
+        }
+        .comment {
+            padding: 10px;
+            border-bottom: 1px solid #dddfe2;
+        }
+        .comment:last-child {
+            border-bottom: none;
+        }
+        .comment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .comment-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #4267b2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .comment-author {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .comment-date {
+            color: #65676b;
+            font-size: 0.8rem;
+            margin-left: auto;
+        }
+        .comment-message {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #65676b;
+        }
+        .comment-likes i {
+            margin-right: 5px;
+            color: #f02849;
+        }
+        .post-metrics {
+            display: flex;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #dddfe2;
+        }
+        .post-metric {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 0.9rem;
+            color: #65676b;
+        }
+        .post-metric i {
+            margin-right: 5px;
+        }
+        .likes-metric i {
+            color: #1877f2;
+        }
+        .comments-metric i {
+            color: #42b883;
+        }
+        .shares-metric i {
+            color: #ffa500;
+        }
+        .chart-container {
+            height: 200px;
+            margin-top: 15px;
+            position: relative;
+        }
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            background-color: #1877f2;
+            border-radius: 3px 3px 0 0;
+            transition: height 0.5s ease;
+        }
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .chart-label {
+            font-size: 0.8rem;
+            color: #65676b;
+            text-align: center;
+            width: 30px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Facebook Integration Demo</h1>
-            <p class="description">Connect with Facebook to manage your pages and post content</p>
+            <h1>Facebook Integration Demo with Metrics</h1>
+            <p class="description">Connect with Facebook to manage your pages, post content, and view metrics</p>
         </header>
         
         <div class="warning">
@@ -359,7 +493,8 @@
                 <li>Click "Connect Facebook" to authenticate with OAuth.</li>
                 <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
-                <li>View your page's posts in the "View Posts" tab.</li>
+                <li>View your page's posts and metrics in the "View Posts" tab.</li>
+                <li>Check page insights in the "Metrics" tab.</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
@@ -368,6 +503,7 @@
             <div class="tab active" data-tab="connect">Connect</div>
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
+            <div class="tab" data-tab="metrics">Metrics</div>
         </div>
         
         <div class="tab-content active" id="connect-tab">
@@ -447,6 +583,17 @@
                             </div>
                             <div class="post-message" id="previewContent">Your post content will appear here...</div>
                             <div id="previewMedia" class="post-media"></div>
+                            <div class="post-metrics">
+                                <div class="post-metric likes-metric">
+                                    <i class="fas fa-thumbs-up"></i> 0 likes
+                                </div>
+                                <div class="post-metric comments-metric">
+                                    <i class="fas fa-comment"></i> 0 comments
+                                </div>
+                                <div class="post-metric shares-metric">
+                                    <i class="fas fa-share"></i> 0 shares
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -477,8 +624,71 @@
             </div>
         </div>
         
+        <div class="tab-content" id="metrics-tab">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Page Metrics</h2>
+                <div class="form-group">
+                    <label for="metricsPageSelect">Selected Page:</label>
+                    <select id="metricsPageSelect" disabled>
+                        <option value="">-- Select a Page --</option>
+                    </select>
+                </div>
+                <button id="loadMetricsBtn" class="btn">
+                    <i class="fas fa-chart-bar"></i> Load Metrics
+                </button>
+                
+                <div id="metricsContainer" class="hidden">
+                    <h3 style="margin: 20px 0 10px;">Page Insights</h3>
+                    
+                    <div class="three-column">
+                        <div class="metrics-card">
+                            <i class="fas fa-users fa-2x"></i>
+                            <div class="metrics-value" id="followersCount">0</div>
+                            <div class="metrics-label">Total Followers</div>
+                            <div class="metrics-change positive" id="followersChange">+0% from last week</div>
+                        </div>
+                        
+                        <div class="metrics-card">
+                            <i class="fas fa-eye fa-2x"></i>
+                            <div class="metrics-value" id="reachCount">0</div>
+                            <div class="metrics-label">Post Reach</div>
+                            <div class="metrics-change positive" id="reachChange">+0% from last week</div>
+                        </div>
+                        
+                        <div class="metrics-card">
+                            <i class="fas fa-user-check fa-2x"></i>
+                            <div class="metrics-value" id="engagementCount">0</div>
+                            <div class="metrics-label">Engagement Rate</div>
+                            <div class="metrics-change positive" id="engagementChange">+0% from last week</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" id="metricsChart">
+                        <div class="chart-labels">
+                            <div class="chart-label">Mon</div>
+                            <div class="chart-label">Tue</div>
+                            <div class="chart-label">Wed</div>
+                            <div class="chart-label">Thu</div>
+                            <div class="chart-label">Fri</div>
+                            <div class="chart-label">Sat</div>
+                            <div class="chart-label">Sun</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 30px 0 15px;">Top Performing Posts</h3>
+                    <div id="topPostsList">
+                        <p class="description">Top posts will appear here</p>
+                    </div>
+                </div>
+                
+                <div id="metricsStatus" class="status info hidden">
+                    <span id="metricsStatusText"></span>
+                </div>
+            </div>
+        </div>
+        
         <div class="footer">
-            <p>This is a demonstration of Facebook integration with OAuth authentication.</p>
+            <p>This is a demonstration of Facebook integration with OAuth authentication and metrics.</p>
         </div>
     </div>
     <script>
@@ -497,6 +707,7 @@
             const userIdDisplay = document.getElementById('userIdDisplay');
             const pageSelect = document.getElementById('pageSelect');
             const retrievePageSelect = document.getElementById('retrievePageSelect');
+            const metricsPageSelect = document.getElementById('metricsPageSelect');
             const postContent = document.getElementById('postContent');
             const postBtn = document.getElementById('postBtn');
             const postStatus = document.getElementById('postStatus');
@@ -515,6 +726,18 @@
             const mediaPreview = document.getElementById('mediaPreview');
             const pageSelection = document.getElementById('pageSelection');
             const pageList = document.getElementById('pageList');
+            const loadMetricsBtn = document.getElementById('loadMetricsBtn');
+            const metricsContainer = document.getElementById('metricsContainer');
+            const metricsStatus = document.getElementById('metricsStatus');
+            const metricsStatusText = document.getElementById('metricsStatusText');
+            const followersCount = document.getElementById('followersCount');
+            const followersChange = document.getElementById('followersChange');
+            const reachCount = document.getElementById('reachCount');
+            const reachChange = document.getElementById('reachChange');
+            const engagementCount = document.getElementById('engagementCount');
+            const engagementChange = document.getElementById('engagementChange');
+            const metricsChart = document.getElementById('metricsChart');
+            const topPostsList = document.getElementById('topPostsList');
             
             // State
             let userData = null;
@@ -553,6 +776,7 @@
             postContent.addEventListener('input', updatePostPreview);
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
+            loadMetricsBtn.addEventListener('click', loadMetrics);
             
             // Check for OAuth response in URL
             checkOAuthResponse();
@@ -598,7 +822,7 @@
                 connectBtn.disabled = true;
                 connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
                 
-                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts&response_type=token`;
+                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights&response_type=token`;
                 window.location.href = authUrl;
             }
             
@@ -681,8 +905,10 @@
                 currentPage = page;
                 pageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 retrievePageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
+                metricsPageSelect.innerHTML = `<option value="${page.id}" selected>${page.name} (${page.category})</option>`;
                 pageSelect.disabled = false;
                 retrievePageSelect.disabled = false;
+                metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
                 
                 // Update preview with page name
@@ -816,7 +1042,7 @@
                 retrieveBtn.disabled = true;
                 retrieveBtn.innerHTML = '<span class="loading"></span> Loading...';
                 
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=message,created_time,attachments&access_token=${currentPage.access_token}`)
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/feed?fields=id,message,created_time,attachments,likes.limit(1).summary(true),comments.limit(1).summary(true),shares&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
                         return response.json();
@@ -842,6 +1068,9 @@
                     postsList.innerHTML = '<p class="description">No posts found for this page</p>';
                     return;
                 }
+                
+                // Sort posts by date (newest first)
+                posts.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
                 
                 posts.forEach(post => {
                     const postEl = document.createElement('div');
@@ -874,6 +1103,43 @@
                         });
                     }
                     
+                    // Add metrics section
+                    const metricsContainer = document.createElement('div');
+                    metricsContainer.className = 'post-metrics';
+                    
+                    const likesCount = post.likes && post.likes.summary ? post.likes.summary.total_count : 0;
+                    const commentsCount = post.comments && post.comments.summary ? post.comments.summary.total_count : 0;
+                    const sharesCount = post.shares && post.shares.count ? post.shares.count : 0;
+                    
+                    metricsContainer.innerHTML = `
+                        <div class="post-metric likes-metric">
+                            <i class="fas fa-thumbs-up"></i> ${likesCount} likes
+                        </div>
+                        <div class="post-metric comments-metric">
+                            <i class="fas fa-comment"></i> ${commentsCount} comments
+                        </div>
+                        <div class="post-metric shares-metric">
+                            <i class="fas fa-share"></i> ${sharesCount} shares
+                        </div>
+                    `;
+                    
+                    // Add comments section
+                    const commentsSection = document.createElement('div');
+                    commentsSection.className = 'comments-section';
+                    
+                    if (commentsCount > 0) {
+                        const commentsTitle = document.createElement('h4');
+                        commentsTitle.textContent = 'Recent Comments:';
+                        commentsSection.appendChild(commentsTitle);
+                        
+                        // In a real app, we would fetch the actual comments here
+                        // For demo purposes, we'll just show a placeholder
+                        const commentPlaceholder = document.createElement('p');
+                        commentPlaceholder.className = 'description';
+                        commentPlaceholder.textContent = 'Comments would be displayed here in a full implementation';
+                        commentsSection.appendChild(commentPlaceholder);
+                    }
+                    
                     postEl.appendChild(message);
                     postEl.appendChild(date);
                     
@@ -881,7 +1147,143 @@
                         postEl.appendChild(mediaContainer);
                     }
                     
+                    postEl.appendChild(metricsContainer);
+                    
+                    if (commentsCount > 0) {
+                        postEl.appendChild(commentsSection);
+                    }
+                    
                     postsList.appendChild(postEl);
+                });
+            }
+            
+            function loadMetrics() {
+                if (!currentPage) {
+                    showMetricsStatus('Please select a page first', 'error');
+                    return;
+                }
+                
+                showMetricsStatus('Loading page metrics...', 'info');
+                loadMetricsBtn.disabled = true;
+                loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
+                
+                // In a real implementation, we would fetch actual metrics from Facebook Graph API
+                // For demo purposes, we'll simulate data
+                setTimeout(() => {
+                    // Simulate metrics data
+                    const followers = Math.floor(Math.random() * 10000) + 500;
+                    const reach = Math.floor(Math.random() * 5000) + 200;
+                    const engagement = (Math.random() * 10 + 5).toFixed(1);
+                    
+                    followersCount.textContent = followers.toLocaleString();
+                    reachCount.textContent = reach.toLocaleString();
+                    engagementCount.textContent = engagement + '%';
+                    
+                    followersChange.textContent = `+${Math.floor(Math.random() * 10) + 1}% from last week`;
+                    reachChange.textContent = `+${Math.floor(Math.random() * 15) + 1}% from last week`;
+                    engagementChange.textContent = `+${Math.floor(Math.random() * 5) + 1}% from last week`;
+                    
+                    // Generate chart data
+                    generateChartData();
+                    
+                    // Generate top posts
+                    generateTopPosts();
+                    
+                    metricsContainer.classList.remove('hidden');
+                    showMetricsStatus('Metrics loaded successfully', 'success');
+                    loadMetricsBtn.disabled = false;
+                    loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
+                }, 1500);
+            }
+            
+            function generateChartData() {
+                // Clear existing chart
+                const chartBars = metricsChart.querySelectorAll('.chart-bar');
+                chartBars.forEach(bar => bar.remove());
+                
+                // Generate random data for the chart
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const maxHeight = 180; // Maximum height in pixels
+                
+                days.forEach((day, index) => {
+                    const value = Math.floor(Math.random() * 100) + 20;
+                    const height = (value / 100) * maxHeight;
+                    
+                    const bar = document.createElement('div');
+                    bar.className = 'chart-bar';
+                    bar.style.height = `${height}px`;
+                    bar.style.left = `${(index * 45) + 10}px`;
+                    
+                    metricsChart.appendChild(bar);
+                });
+            }
+            
+            function generateTopPosts() {
+                // Clear existing top posts
+                topPostsList.innerHTML = '';
+                
+                if (postsData.length === 0) {
+                    topPostsList.innerHTML = '<p class="description">No posts available to analyze</p>';
+                    return;
+                }
+                
+                // Sort posts by engagement (likes + comments + shares)
+                const sortedPosts = [...postsData].sort((a, b) => {
+                    const aLikes = a.likes && a.likes.summary ? a.likes.summary.total_count : 0;
+                    const aComments = a.comments && a.comments.summary ? a.comments.summary.total_count : 0;
+                    const aShares = a.shares && a.shares.count ? a.shares.count : 0;
+                    const aEngagement = aLikes + aComments + aShares;
+                    
+                    const bLikes = b.likes && b.likes.summary ? b.likes.summary.total_count : 0;
+                    const bComments = b.comments && b.comments.summary ? b.comments.summary.total_count : 0;
+                    const bShares = b.shares && b.shares.count ? b.shares.count : 0;
+                    const bEngagement = bLikes + bComments + bShares;
+                    
+                    return bEngagement - aEngagement;
+                });
+                
+                // Show top 3 posts
+                const topPosts = sortedPosts.slice(0, 3);
+                
+                topPosts.forEach(post => {
+                    const postEl = document.createElement('div');
+                    postEl.className = 'post';
+                    
+                    const message = document.createElement('div');
+                    message.className = 'post-message';
+                    message.textContent = post.message ? (post.message.length > 100 ? post.message.substring(0, 100) + '...' : post.message) : '(No text content)';
+                    
+                    const date = document.createElement('div');
+                    date.className = 'post-date';
+                    date.textContent = new Date(post.created_time).toLocaleString();
+                    
+                    const likesCount = post.likes && post.likes.summary ? post.likes.summary.total_count : 0;
+                    const commentsCount = post.comments && post.comments.summary ? post.comments.summary.total_count : 0;
+                    const sharesCount = post.shares && post.shares.count ? post.shares.count : 0;
+                    const totalEngagement = likesCount + commentsCount + sharesCount;
+                    
+                    const metricsContainer = document.createElement('div');
+                    metricsContainer.className = 'post-metrics';
+                    metricsContainer.innerHTML = `
+                        <div class="post-metric likes-metric">
+                            <i class="fas fa-thumbs-up"></i> ${likesCount}
+                        </div>
+                        <div class="post-metric comments-metric">
+                            <i class="fas fa-comment"></i> ${commentsCount}
+                        </div>
+                        <div class="post-metric shares-metric">
+                            <i class="fas fa-share"></i> ${sharesCount}
+                        </div>
+                        <div style="margin-left: auto; font-weight: bold;">
+                            Total: ${totalEngagement}
+                        </div>
+                    `;
+                    
+                    postEl.appendChild(message);
+                    postEl.appendChild(date);
+                    postEl.appendChild(metricsContainer);
+                    
+                    topPostsList.appendChild(postEl);
                 });
             }
             
@@ -905,6 +1307,7 @@
                 previewMedia.innerHTML = '';
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
                 appIdInput.value = '';
+                metricsContainer.classList.add('hidden');
                 
                 showStatus('Logged out successfully', 'info');
                 document.querySelector('[data-tab="connect"]').click();
@@ -926,6 +1329,12 @@
                 retrieveStatusText.textContent = message;
                 retrieveStatus.className = `status ${type}`;
                 retrieveStatus.classList.remove('hidden');
+            }
+            
+            function showMetricsStatus(message, type) {
+                metricsStatusText.textContent = message;
+                metricsStatus.className = `status ${type}`;
+                metricsStatus.classList.remove('hidden');
             }
         });
     </script>
