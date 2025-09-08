@@ -466,6 +466,19 @@
             text-align: center;
             width: 30px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #dddfe2;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f2f5;
+        }
     </style>
 </head>
 <body>
@@ -495,6 +508,7 @@
                 <li>Create a post with text, images, or videos and publish it.</li>
                 <li>View your page's posts and metrics in the "View Posts" tab.</li>
                 <li>Check page insights in the "Metrics" tab.</li>
+                <li>View ad campaigns and insights in the "Ad Campaigns" tab.</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
@@ -504,6 +518,7 @@
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
             <div class="tab" data-tab="metrics">Metrics</div>
+            <div class="tab" data-tab="ads">Ad Campaigns</div>
         </div>
        
         <div class="tab-content active" id="connect-tab">
@@ -537,6 +552,10 @@
                 <div id="pageSelection" class="hidden">
                     <h3>Select a Page to Manage:</h3>
                     <div id="pageList" class="page-list"></div>
+                </div>
+                <div id="adAccountSelection" class="hidden">
+                    <h3>Select an Ad Account:</h3>
+                    <div id="adAccountList" class="page-list"></div>
                 </div>
             </div>
         </div>
@@ -686,6 +705,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="tab-content" id="ads-tab">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-ad"></i> Ad Campaigns</h2>
+                <div class="form-group">
+                    <label for="adsAccountSelect">Selected Ad Account:</label>
+                    <select id="adsAccountSelect" disabled>
+                        <option value="">-- Select an Ad Account --</option>
+                    </select>
+                </div>
+                <button id="loadCampaignsBtn" class="btn">
+                    <i class="fas fa-sync-alt"></i> Load Campaigns
+                </button>
+                <div id="campaignsContainer">
+                    <h3 style="margin: 20px 0 10px;">Campaigns</h3>
+                    <div id="campaignsList">
+                        <p class="description">Your campaigns will appear here after you load them</p>
+                    </div>
+                </div>
+                <div id="adsStatus" class="status info hidden">
+                    <span id="adsStatusText"></span>
+                </div>
+            </div>
+        </div>
        
         <div class="footer">
             <p>This is a demonstration of Facebook integration with OAuth authentication and metrics.</p>
@@ -708,6 +751,7 @@
             const pageSelect = document.getElementById('pageSelect');
             const retrievePageSelect = document.getElementById('retrievePageSelect');
             const metricsPageSelect = document.getElementById('metricsPageSelect');
+            const adsAccountSelect = document.getElementById('adsAccountSelect');
             const postContent = document.getElementById('postContent');
             const postBtn = document.getElementById('postBtn');
             const postStatus = document.getElementById('postStatus');
@@ -726,6 +770,8 @@
             const mediaPreview = document.getElementById('mediaPreview');
             const pageSelection = document.getElementById('pageSelection');
             const pageList = document.getElementById('pageList');
+            const adAccountSelection = document.getElementById('adAccountSelection');
+            const adAccountList = document.getElementById('adAccountList');
             const loadMetricsBtn = document.getElementById('loadMetricsBtn');
             const metricsContainer = document.getElementById('metricsContainer');
             const metricsStatus = document.getElementById('metricsStatus');
@@ -738,12 +784,18 @@
             const engagementChange = document.getElementById('engagementChange');
             const metricsChart = document.getElementById('metricsChart');
             const topPostsList = document.getElementById('topPostsList');
+            const loadCampaignsBtn = document.getElementById('loadCampaignsBtn');
+            const campaignsList = document.getElementById('campaignsList');
+            const adsStatus = document.getElementById('adsStatus');
+            const adsStatusText = document.getElementById('adsStatusText');
            
             // State
             let userData = null;
             let pages = [];
+            let adAccounts = [];
             let postsData = [];
             let currentPage = null;
+            let currentAdAccount = null;
             let selectedMedia = null;
             let accessToken = '';
             let APP_ID = '';
@@ -777,6 +829,7 @@
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
             loadMetricsBtn.addEventListener('click', loadMetrics);
+            loadCampaignsBtn.addEventListener('click', loadCampaigns);
            
             // Check for OAuth response in URL
             checkOAuthResponse();
@@ -822,7 +875,7 @@
                 connectBtn.disabled = true;
                 connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
                
-                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights&response_type=token`;
+                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights,ads_read&response_type=token`;
                 window.location.href = authUrl;
             }
            
@@ -845,6 +898,7 @@
                         appIdForm.classList.add('hidden');
                         connectBtn.classList.add('hidden');
                         getPages();
+                        getAdAccounts();
                     })
                     .catch(error => {
                         showStatus('Error fetching user data: ' + error.message, 'error');
@@ -870,12 +924,30 @@
                         }
                        
                         showPagesSelection();
-                        showStatus('Authentication complete! Select a page to manage.', 'success');
+                        showStatus('Authentication complete! Select a page and ad account to manage.', 'success');
                     })
                     .catch(error => {
                         showStatus('Error fetching pages: ' + error.message, 'error');
                         appIdForm.classList.remove('hidden');
                         connectBtn.classList.add('hidden');
+                    });
+            }
+           
+            function getAdAccounts() {
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/adaccounts?access_token=${accessToken}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch ad accounts: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        adAccounts = response.data;
+                       
+                        if (adAccounts.length > 0) {
+                            showAdAccountsSelection();
+                        }
+                    })
+                    .catch(error => {
+                        showStatus('Error fetching ad accounts: ' + error.message, 'error');
                     });
             }
            
@@ -892,12 +964,34 @@
                     `;
                    
                     pageItem.addEventListener('click', () => {
-                        document.querySelectorAll('.page-item').forEach(item => item.classList.remove('selected'));
+                        document.querySelectorAll('#pageList .page-item').forEach(item => item.classList.remove('selected'));
                         pageItem.classList.add('selected');
                         selectPage(page);
                     });
                    
                     pageList.appendChild(pageItem);
+                });
+            }
+
+            function showAdAccountsSelection() {
+                adAccountSelection.classList.remove('hidden');
+                adAccountList.innerHTML = '';
+               
+                adAccounts.forEach(adAccount => {
+                    const adItem = document.createElement('div');
+                    adItem.className = 'page-item';
+                    adItem.innerHTML = `
+                        <div class="page-name">${adAccount.name}</div>
+                        <div class="page-category">ID: ${adAccount.account_id}</div>
+                    `;
+                   
+                    adItem.addEventListener('click', () => {
+                        document.querySelectorAll('#adAccountList .page-item').forEach(item => item.classList.remove('selected'));
+                        adItem.classList.add('selected');
+                        selectAdAccount(adAccount);
+                    });
+                   
+                    adAccountList.appendChild(adItem);
                 });
             }
            
@@ -915,6 +1009,12 @@
                 previewPageName.textContent = page.name;
                
                 document.querySelector('[data-tab="post"]').click();
+            }
+
+            function selectAdAccount(adAccount) {
+                currentAdAccount = adAccount;
+                adsAccountSelect.innerHTML = `<option value="${adAccount.id}" selected>${adAccount.name}</option>`;
+                adsAccountSelect.disabled = false;
             }
            
             function handleMediaUpload(event) {
@@ -1196,11 +1296,11 @@
                     showMetricsStatus('Please select a page first', 'error');
                     return;
                 }
-
+               
                 showMetricsStatus('Loading page metrics...', 'info');
                 loadMetricsBtn.disabled = true;
                 loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
-
+               
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=page_fans,page_impressions,page_post_engagements&period=day&date_preset=last_14d&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -1287,7 +1387,6 @@
                         loadMetricsBtn.disabled = false;
                         loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
                     });
-
             }
            
             function generateChartData(chart_data) {
@@ -1377,12 +1476,107 @@
                     topPostsList.appendChild(postEl);
                 });
             }
+
+            function loadCampaigns() {
+                if (!currentAdAccount) {
+                    showAdsStatus('Please select an ad account first', 'error');
+                    return;
+                }
+               
+                showAdsStatus('Loading campaigns...', 'info');
+                loadCampaignsBtn.disabled = true;
+                loadCampaignsBtn.innerHTML = '<span class="loading"></span> Loading...';
+               
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentAdAccount.id}/campaigns?fields=name,status,objective&access_token=${accessToken}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch campaigns: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        const campaigns = response.data;
+                        displayCampaigns(campaigns);
+                        showAdsStatus(`Loaded ${campaigns.length} campaigns`, 'success');
+                        loadCampaignsBtn.disabled = false;
+                        loadCampaignsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Campaigns';
+                    })
+                    .catch(error => {
+                        showAdsStatus('Error loading campaigns: ' + error.message, 'error');
+                        loadCampaignsBtn.disabled = false;
+                        loadCampaignsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Campaigns';
+                    });
+            }
+
+            function displayCampaigns(campaigns) {
+                campaignsList.innerHTML = '';
+               
+                if (campaigns.length === 0) {
+                    campaignsList.innerHTML = '<p class="description">No campaigns found for this ad account</p>';
+                    return;
+                }
+               
+                campaigns.forEach(camp => {
+                    const campEl = document.createElement('div');
+                    campEl.className = 'post';
+                   
+                    const name = document.createElement('div');
+                    name.className = 'post-message';
+                    name.textContent = camp.name;
+                   
+                    const details = document.createElement('div');
+                    details.className = 'post-date';
+                    details.textContent = `Status: ${camp.status}, Objective: ${camp.objective}`;
+                   
+                    const insightsBtn = document.createElement('button');
+                    insightsBtn.className = 'btn';
+                    insightsBtn.textContent = 'Load Insights';
+                    insightsBtn.addEventListener('click', () => loadCampaignInsights(camp.id));
+                   
+                    const insightsDiv = document.createElement('div');
+                    insightsDiv.id = `insights-${camp.id}`;
+                   
+                    campEl.appendChild(name);
+                    campEl.appendChild(details);
+                    campEl.appendChild(insightsBtn);
+                    campEl.appendChild(insightsDiv);
+                   
+                    campaignsList.appendChild(campEl);
+                });
+            }
+
+            function loadCampaignInsights(campaignId) {
+                const insightsDiv = document.getElementById(`insights-${campaignId}`);
+                insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
+               
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&access_token=${accessToken}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch insights: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        const data = response.data;
+                        if (data.length > 0) {
+                            let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
+                            data.forEach(row => {
+                                table += `<tr><td>${row.age || 'N/A'}</td><td>${row.country || 'N/A'}</td><td>${row.reach || 0}</td><td>${row.impressions || 0}</td><td>${row.spend || 0}</td></tr>`;
+                            });
+                            table += '</tbody></table>';
+                            insightsDiv.innerHTML = table;
+                        } else {
+                            insightsDiv.innerHTML = '<p class="description">No insights data available</p>';
+                        }
+                    })
+                    .catch(error => {
+                        insightsDiv.innerHTML = 'Error: ' + error.message;
+                    });
+            }
            
             function logout() {
                 userData = null;
                 pages = [];
+                adAccounts = [];
                 postsData = [];
                 currentPage = null;
+                currentAdAccount = null;
                 selectedMedia = null;
                 accessToken = '';
                 APP_ID = '';
@@ -1391,12 +1585,14 @@
                 appIdForm.classList.remove('hidden');
                 connectBtn.classList.add('hidden');
                 pageSelection.classList.add('hidden');
+                adAccountSelection.classList.add('hidden');
                 postContent.value = '';
                 mediaPreview.classList.add('hidden');
                 mediaPreview.innerHTML = '';
                 mediaFile.value = '';
                 previewMedia.innerHTML = '';
                 postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
+                campaignsList.innerHTML = '<p class="description">Your campaigns will appear here after you load them</p>';
                 appIdInput.value = '';
                 metricsContainer.classList.add('hidden');
                
@@ -1426,6 +1622,12 @@
                 metricsStatusText.textContent = message;
                 metricsStatus.className = `status ${type}`;
                 metricsStatus.classList.remove('hidden');
+            }
+
+            function showAdsStatus(message, type) {
+                adsStatusText.textContent = message;
+                adsStatus.className = `status ${type}`;
+                adsStatus.classList.remove('hidden');
             }
         });
     </script>
