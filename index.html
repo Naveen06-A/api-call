@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Integration Demo with Metrics</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -479,6 +480,9 @@
         th {
             background-color: #f0f2f5;
         }
+        canvas {
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -800,7 +804,7 @@
             let accessToken = '';
             let APP_ID = '';
            
-            // Configuration - Using localhost for development
+            // Configuration
             const REDIRECT_URI = window.location.origin;
             const FB_API_VERSION = 'v19.0';
            
@@ -1005,7 +1009,6 @@
                 metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
                
-                // Update preview with page name
                 previewPageName.textContent = page.name;
                
                 document.querySelector('[data-tab="post"]').click();
@@ -1169,7 +1172,6 @@
                     return;
                 }
                
-                // Sort posts by date (newest first)
                 posts.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
                
                 posts.forEach(post => {
@@ -1204,7 +1206,6 @@
                         });
                     }
                    
-                    // Add metrics section
                     const metricsContainer = document.createElement('div');
                     metricsContainer.className = 'post-metrics';
                    
@@ -1224,7 +1225,6 @@
                         </div>
                     `;
                    
-                    // Add comments section
                     const commentsSection = document.createElement('div');
                     commentsSection.className = 'comments-section';
                    
@@ -1314,7 +1314,6 @@
                             throw new Error('No metrics data available for this page');
                         }
 
-                        // Extract metrics data
                         const fans = data.find(m => m.name === 'page_fans')?.values || [];
                         const impressions = data.find(m => m.name === 'page_impressions')?.values || [];
                         const engagements = data.find(m => m.name === 'page_post_engagements')?.values || [];
@@ -1330,14 +1329,12 @@
 
                         const half = Math.floor(num_days / 2);
 
-                        // Calculate followers
                         const curr_followers = fans[num_days - 1]?.value || 0;
                         const prev_followers = fans[half - 1]?.value || 0;
                         const followers_change = prev_followers > 0 ? ((curr_followers - prev_followers) / prev_followers * 100).toFixed(1) : 0;
                         const change_sign_f = followers_change >= 0 ? '+' : '';
                         const class_f = followers_change >= 0 ? 'positive' : 'negative';
 
-                        // Calculate reach (impressions)
                         let prev_impressions = 0;
                         for (let i = 0; i < half; i++) prev_impressions += impressions[i]?.value || 0;
                         let curr_impressions = 0;
@@ -1346,7 +1343,6 @@
                         const change_sign_r = reach_change >= 0 ? '+' : '';
                         const class_r = reach_change >= 0 ? 'positive' : 'negative';
 
-                        // Calculate engagement rate
                         let prev_engagements = 0;
                         for (let i = 0; i < half; i++) prev_engagements += engagements[i]?.value || 0;
                         let curr_engagements = 0;
@@ -1357,7 +1353,6 @@
                         const change_sign_e = engagement_change >= 0 ? '+' : '';
                         const class_e = engagement_change >= 0 ? 'positive' : 'negative';
 
-                        // Update DOM elements
                         followersCount.textContent = curr_followers.toLocaleString();
                         followersChange.textContent = `${change_sign_f}${followers_change}% from last week`;
                         followersChange.className = `metrics-change ${class_f}`;
@@ -1370,11 +1365,9 @@
                         engagementChange.textContent = `${change_sign_e}${engagement_change}% from last week`;
                         engagementChange.className = `metrics-change ${class_e}`;
 
-                        // Generate chart data for the last 7 days
                         const chart_data = impressions.slice(-7).map(v => v.value || 0);
                         generateChartData(chart_data);
 
-                        // Generate top posts
                         generateTopPosts();
 
                         metricsContainer.classList.remove('hidden');
@@ -1393,7 +1386,7 @@
                 const chartBars = metricsChart.querySelectorAll('.chart-bar');
                 chartBars.forEach(bar => bar.remove());
                
-                const max_value = Math.max(...chart_data, 1); // avoid division by zero
+                const max_value = Math.max(...chart_data, 1);
                 const max_height = 180;
                
                 chart_data.forEach((value, index) => {
@@ -1409,7 +1402,6 @@
             }
            
             function generateTopPosts() {
-                // Clear existing top posts
                 topPostsList.innerHTML = '';
                
                 if (postsData.length === 0) {
@@ -1417,7 +1409,6 @@
                     return;
                 }
                
-                // Sort posts by engagement (likes + comments + shares)
                 const sortedPosts = [...postsData].sort((a, b) => {
                     const aLikes = a.likes && a.likes.summary ? a.likes.summary.total_count : 0;
                     const aComments = a.comments && a.comments.summary ? a.comments.summary.total_count : 0;
@@ -1432,7 +1423,6 @@
                     return bEngagement - aEngagement;
                 });
                
-                // Show top 3 posts
                 const topPosts = sortedPosts.slice(0, 3);
                
                 topPosts.forEach(post => {
@@ -1547,24 +1537,21 @@
                 const insightsDiv = document.getElementById(`insights-${campaignId}`);
                 insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
             
-                // Validate inputs
                 if (!currentAdAccount || !campaignId) {
                     insightsDiv.innerHTML = '<p class="description">Error: No ad account or campaign selected</p>';
                     showAdsStatus('Please select an ad account and campaign', 'error');
                     return;
                 }
             
-                // Ensure access token is valid
                 if (!accessToken) {
                     insightsDiv.innerHTML = '<p class="description">Error: No valid access token available</p>';
                     showAdsStatus('Authentication error: Please reconnect to Facebook', 'error');
                     return;
                 }
             
-                // Fetch campaign insights with breakdowns by age and country
                 const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`;
                 
-                console.log('Fetching insights with URL:', url); // Debugging log to confirm request
+                console.log('Fetching insights with URL:', url);
             
                 fetch(url)
                     .then(response => {
@@ -1582,12 +1569,11 @@
             
                         const data = response.data || [];
                         if (data.length === 0) {
-                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign</p>';
-                            showAdsStatus('No insights data available for this campaign. Try a broader date range.', 'info');
+                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign. Try a broader date range.</p>';
+                            showAdsStatus('No insights data available for this campaign', 'info');
                             return;
                         }
             
-                        // Process insights data
                         let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
                         data.forEach(row => {
                             table += `<tr>
@@ -1600,7 +1586,12 @@
                         });
                         table += '</tbody></table>';
             
+                        table += '<h3 style="margin: 20px 0 10px;">Insights by Age Group</h3>';
+                        table += `<div class="chart-container"><canvas id="insights-chart-${campaignId}"></canvas></div>`;
+            
                         insightsDiv.innerHTML = table;
+                        generateInsightsChart(data, campaignId);
+            
                         showAdsStatus('Campaign insights loaded successfully', 'success');
                     })
                     .catch(error => {
@@ -1608,7 +1599,6 @@
                         showAdsStatus(`Error loading campaign insights: ${error.message}`, 'error');
                         console.error('Insights Fetch Error:', error, { campaignId, url });
             
-                        // Fallback: Try fetching without breakdowns if the error is due to invalid breakdown combination
                         if (error.message.includes('Current combination of data breakdown columns')) {
                             console.log('Retrying without breakdowns...');
                             fetchInsightsWithoutBreakdowns(campaignId);
@@ -1616,7 +1606,6 @@
                     });
             }
             
-            // Fallback function to fetch insights without breakdowns
             function fetchInsightsWithoutBreakdowns(campaignId) {
                 const insightsDiv = document.getElementById(`insights-${campaignId}`);
                 const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&date_preset=last_30d&access_token=${accessToken}`;
@@ -1644,7 +1633,6 @@
                             return;
                         }
             
-                        // Display aggregated insights (no breakdowns)
                         let table = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
                         data.forEach(row => {
                             table += `<tr><td>Reach</td><td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td></tr>`;
@@ -1661,6 +1649,92 @@
                         showAdsStatus(`Fallback error loading campaign insights: ${error.message}`, 'error');
                         console.error('Fallback Insights Fetch Error:', error, { campaignId, url });
                     });
+            }
+            
+            function generateInsightsChart(data, campaignId) {
+                const canvas = document.getElementById(`insights-chart-${campaignId}`);
+                if (!canvas) return;
+                
+                const ageGroups = [...new Set(data.map(row => row.age))].filter(age => age !== 'N/A');
+                const reachData = ageGroups.map(age => {
+                    const rows = data.filter(row => row.age === age);
+                    return rows.reduce((sum, row) => sum + (parseInt(row.reach) || 0), 0);
+                });
+                const impressionsData = ageGroups.map(age => {
+                    const rows = data.filter(row => row.age === age);
+                    return rows.reduce((sum, row) => sum + (parseInt(row.impressions) || 0), 0);
+                });
+                const spendData = ageGroups.map(age => {
+                    const rows = data.filter(row => row.age === age);
+                    return rows.reduce((sum, row) => sum + (parseFloat(row.spend) || 0), 0);
+                });
+                
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ageGroups,
+                        datasets: [
+                            {
+                                label: 'Reach',
+                                data: reachData,
+                                backgroundColor: 'rgba(24, 119, 242, 0.6)',
+                                borderColor: 'rgba(24, 119, 242, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Impressions',
+                                data: impressionsData,
+                                backgroundColor: 'rgba(66, 184, 131, 0.6)',
+                                borderColor: 'rgba(66, 184, 131, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Spend',
+                                data: spendData,
+                                backgroundColor: 'rgba(255, 165, 0, 0.6)',
+                                borderColor: 'rgba(255, 165, 0, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#1c1e21'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Campaign Insights by Age Group',
+                                color: '#1c1e21',
+                                font: { size: 16 }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Age Group',
+                                    color: '#1c1e21'
+                                },
+                                ticks: { color: '#1c1e21' }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value',
+                                    color: '#1c1e21'
+                                },
+                                ticks: { color: '#1c1e21' },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
             }
            
             function logout() {
