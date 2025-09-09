@@ -1546,27 +1546,54 @@
             function loadCampaignInsights(campaignId) {
                 const insightsDiv = document.getElementById(`insights-${campaignId}`);
                 insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
-               
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&access_token=${accessToken}`)
+            
+                // Ensure the ad account and campaign exist
+                if (!currentAdAccount || !campaignId) {
+                    insightsDiv.innerHTML = '<p class="description">Error: No ad account or campaign selected</p>';
+                    showAdsStatus('Please select an ad account and campaign', 'error');
+                    return;
+                }
+            
+                // Fetch campaign insights with breakdowns by age and country
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`)
                     .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch insights: ${response.statusText}`);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch insights: ${response.statusText} (Status: ${response.status})`);
+                        }
                         return response.json();
                     })
                     .then(response => {
-                        const data = response.data;
-                        if (data.length > 0) {
-                            let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
-                            data.forEach(row => {
-                                table += `<tr><td>${row.age || 'N/A'}</td><td>${row.country || 'N/A'}</td><td>${row.reach || 0}</td><td>${row.impressions || 0}</td><td>${row.spend || 0}</td></tr>`;
-                            });
-                            table += '</tbody></table>';
-                            insightsDiv.innerHTML = table;
-                        } else {
-                            insightsDiv.innerHTML = '<p class="description">No insights data available</p>';
+                        if (response.error) {
+                            throw new Error(`API Error: ${response.error.message} (Code: ${response.error.code})`);
                         }
+            
+                        const data = response.data || [];
+                        if (data.length === 0) {
+                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign</p>';
+                            showAdsStatus('No insights data available for this campaign', 'info');
+                            return;
+                        }
+            
+                        // Process insights data
+                        let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
+                        data.forEach(row => {
+                            table += `<tr>
+                                <td>${row.age || 'N/A'}</td>
+                                <td>${row.country || 'N/A'}</td>
+                                <td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td>
+                                <td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td>
+                                <td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td>
+                            </tr>`;
+                        });
+                        table += '</tbody></table>';
+            
+                        insightsDiv.innerHTML = table;
+                        showAdsStatus('Campaign insights loaded successfully', 'success');
                     })
                     .catch(error => {
-                        insightsDiv.innerHTML = 'Error: ' + error.message;
+                        insightsDiv.innerHTML = `<p class="description">Error loading insights: ${error.message}</p>`;
+                        showAdsStatus(`Error loading campaign insights: ${error.message}`, 'error');
+                        console.error('Insights Fetch Error:', error);
                     });
             }
            
