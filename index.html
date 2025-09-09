@@ -1547,12 +1547,13 @@
                 const insightsDiv = document.getElementById(`insights-${campaignId}`);
                 insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
             
-                // Ensure the ad account and campaign exist
+                // Validate inputs
                 if (!currentAdAccount || !campaignId) {
                     insightsDiv.innerHTML = '<p class="description">Error: No ad account or campaign selected</p>';
                     showAdsStatus('Please select an ad account and campaign', 'error');
                     return;
                 }
+            
                 // Ensure access token is valid
                 if (!accessToken) {
                     insightsDiv.innerHTML = '<p class="description">Error: No valid access token available</p>';
@@ -1562,16 +1563,17 @@
             
                 // Fetch campaign insights with breakdowns by age and country
                 const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`;
-                console.log('Fetching insights with URL:', url); // Debugging log
-        
+                
+                console.log('Fetching insights with URL:', url); // Debugging log to confirm request
+            
                 fetch(url)
                     .then(response => {
                         if (!response.ok) {
                             return response.json().then(errorData => {
-                                    throw new Error(`Failed to fetch insights: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
-                                });
-                            }
-                            return response.json();
+                                throw new Error(`Failed to fetch insights: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
+                            });
+                        }
+                        return response.json();
                     })
                     .then(response => {
                         if (response.error) {
@@ -1581,7 +1583,7 @@
                         const data = response.data || [];
                         if (data.length === 0) {
                             insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign</p>';
-                            showAdsStatus('No insights data available for this campaign', 'info');
+                            showAdsStatus('No insights data available for this campaign. Try a broader date range.', 'info');
                             return;
                         }
             
@@ -1604,7 +1606,60 @@
                     .catch(error => {
                         insightsDiv.innerHTML = `<p class="description">Error loading insights: ${error.message}</p>`;
                         showAdsStatus(`Error loading campaign insights: ${error.message}`, 'error');
-                        console.error('Insights Fetch Error:', error);
+                        console.error('Insights Fetch Error:', error, { campaignId, url });
+            
+                        // Fallback: Try fetching without breakdowns if the error is due to invalid breakdown combination
+                        if (error.message.includes('Current combination of data breakdown columns')) {
+                            console.log('Retrying without breakdowns...');
+                            fetchInsightsWithoutBreakdowns(campaignId);
+                        }
+                    });
+            }
+            
+            // Fallback function to fetch insights without breakdowns
+            function fetchInsightsWithoutBreakdowns(campaignId) {
+                const insightsDiv = document.getElementById(`insights-${campaignId}`);
+                const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&date_preset=last_30d&access_token=${accessToken}`;
+                
+                console.log('Fallback: Fetching insights with URL:', url);
+            
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw new Error(`Fallback fetch failed: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(response => {
+                        if (response.error) {
+                            throw new Error(`Fallback API Error: ${response.error.message} (Code: ${response.error.code})`);
+                        }
+            
+                        const data = response.data || [];
+                        if (data.length === 0) {
+                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign</p>';
+                            showAdsStatus('No insights data available for this campaign', 'info');
+                            return;
+                        }
+            
+                        // Display aggregated insights (no breakdowns)
+                        let table = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+                        data.forEach(row => {
+                            table += `<tr><td>Reach</td><td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td></tr>`;
+                            table += `<tr><td>Impressions</td><td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td></tr>`;
+                            table += `<tr><td>Spend</td><td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td></tr>`;
+                        });
+                        table += '</tbody></table>';
+            
+                        insightsDiv.innerHTML = table;
+                        showAdsStatus('Campaign insights loaded without breakdowns due to invalid breakdown combination', 'info');
+                    })
+                    .catch(error => {
+                        insightsDiv.innerHTML = `<p class="description">Fallback error: ${error.message}</p>`;
+                        showAdsStatus(`Fallback error loading campaign insights: ${error.message}`, 'error');
+                        console.error('Fallback Insights Fetch Error:', error, { campaignId, url });
                     });
             }
            
