@@ -1562,6 +1562,7 @@
             
                 // Fetch campaign insights with breakdowns by age and country
                 const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`;
+                console.log('Fetching insights with URL:', url); // Debugging log
         
                 fetch(url)
                     .then(response => {
