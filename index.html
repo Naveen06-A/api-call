@@ -8,7 +8,352 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
-            margin: 0;
+            margin: 0;<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Integration Demo with Metrics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ... (keep all existing styles) ... */
+        
+        .campaigns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .campaign-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #dddfe2;
+        }
+        
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dddfe2;
+        }
+        
+        .campaign-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #1877f2;
+        }
+        
+        .campaign-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-active {
+            background-color: #e7f3ff;
+            color: #1877f2;
+        }
+        
+        .status-paused {
+            background-color: #fff4e6;
+            color: #e67700;
+        }
+        
+        .status-completed {
+            background-color: #e6f7ee;
+            color: #42b883;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 10px;
+            background-color: #f7f8fa;
+            border-radius: 8px;
+        }
+        
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1877f2;
+            margin: 5px 0;
+        }
+        
+        .metric-label {
+            color: #65676b;
+            font-size: 0.8rem;
+        }
+        
+        .metric-change {
+            font-size: 0.7rem;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Facebook Integration Demo with Metrics</h1>
+            <p class="description">Connect with Facebook to manage your campaigns, ads, and view metrics</p>
+        </header>
+       
+        <!-- ... (keep all existing HTML structure) ... -->
+       
+        <div class="tab-content" id="metrics-tab">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Campaign Metrics</h2>
+                <div class="form-group">
+                    <label for="adAccountSelect">Select Ad Account:</label>
+                    <select id="adAccountSelect" disabled>
+                        <option value="">-- Select an Ad Account --</option>
+                    </select>
+                </div>
+                <button id="loadCampaignsBtn" class="btn">
+                    <i class="fas fa-chart-bar"></i> Load Campaigns
+                </button>
+               
+                <div id="campaignsContainer" class="hidden">
+                    <h3 style="margin: 20px 0 10px;">Your Campaigns</h3>
+                    <div id="campaignsList" class="campaigns-grid">
+                        <p class="description">Campaigns will appear here after loading</p>
+                    </div>
+                </div>
+               
+                <div id="metricsStatus" class="status info hidden">
+                    <span id="metricsStatusText"></span>
+                </div>
+            </div>
+        </div>
+       
+        <div class="footer">
+            <p>This is a demonstration of Facebook integration with OAuth authentication and metrics.</p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... (keep all existing DOM element references) ...
+            
+            // Add new DOM elements for campaigns
+            const adAccountSelect = document.getElementById('adAccountSelect');
+            const loadCampaignsBtn = document.getElementById('loadCampaignsBtn');
+            const campaignsContainer = document.getElementById('campaignsContainer');
+            const campaignsList = document.getElementById('campaignsList');
+            
+            // ... (keep all existing state variables) ...
+            
+            // Add new state variables
+            let adAccounts = [];
+            
+            // ... (keep all existing event listeners) ...
+            
+            // Add new event listener
+            loadCampaignsBtn.addEventListener('click', loadAdAccountsAndCampaigns);
+            
+            // ... (keep all existing functions) ...
+            
+            // Add new functions for campaigns
+            function loadAdAccountsAndCampaigns() {
+                if (!accessToken) {
+                    showMetricsStatus('Please connect to Facebook first', 'error');
+                    return;
+                }
+
+                showMetricsStatus('Loading ad accounts and campaigns...', 'info');
+                loadCampaignsBtn.disabled = true;
+                loadCampaignsBtn.innerHTML = '<span class="loading"></span> Loading...';
+
+                // First, get ad accounts
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/adaccounts?fields=id,name,account_status,currency&access_token=${accessToken}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch ad accounts: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        if (response.error) throw new Error(response.error.message);
+                        
+                        adAccounts = response.data;
+                        
+                        if (adAccounts.length === 0) {
+                            throw new Error('No ad accounts found for this user');
+                        }
+                        
+                        // Populate ad account dropdown
+                        adAccountSelect.innerHTML = '<option value="">-- Select an Ad Account --</option>';
+                        adAccounts.forEach(account => {
+                            const option = document.createElement('option');
+                            option.value = account.id;
+                            option.textContent = `${account.name} (${account.currency})`;
+                            adAccountSelect.appendChild(option);
+                        });
+                        
+                        adAccountSelect.disabled = false;
+                        
+                        // If there's only one account, select it automatically
+                        if (adAccounts.length === 1) {
+                            adAccountSelect.value = adAccounts[0].id;
+                            loadCampaigns();
+                        } else {
+                            showMetricsStatus('Please select an ad account from the dropdown', 'info');
+                            loadCampaignsBtn.disabled = false;
+                            loadCampaignsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Campaigns';
+                        }
+                    })
+                    .catch(error => {
+                        showMetricsStatus('Error loading ad accounts: ' + error.message, 'error');
+                        loadCampaignsBtn.disabled = false;
+                        loadCampaignsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Campaigns';
+                    });
+            }
+            
+            function loadCampaigns() {
+                const selectedAccountId = adAccountSelect.value;
+                if (!selectedAccountId) {
+                    showMetricsStatus('Please select an ad account first', 'error');
+                    return;
+                }
+                
+                showMetricsStatus('Loading campaigns...', 'info');
+                loadCampaignsBtn.disabled = true;
+                loadCampaignsBtn.innerHTML = '<span class="loading"></span> Loading...';
+                
+                // Get campaigns with metrics
+                const fields = [
+                    'id', 'name', 'status', 'objective', 
+                    'insights{spend, impressions, clicks, ctr, cpc, cpm, reach, frequency, actions, cost_per_action_type}'
+                ].join(',');
+                
+                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${selectedAccountId}/campaigns?fields=${fields}&access_token=${accessToken}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Failed to fetch campaigns: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(response => {
+                        if (response.error) throw new Error(response.error.message);
+                        
+                        const campaigns = response.data;
+                        
+                        if (campaigns.length === 0) {
+                            throw new Error('No campaigns found for this ad account');
+                        }
+                        
+                        displayCampaigns(campaigns);
+                        campaignsContainer.classList.remove('hidden');
+                        showMetricsStatus(`Loaded ${campaigns.length} campaigns`, 'success');
+                        loadCampaignsBtn.disabled = false;
+                        loadCampaignsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Campaigns';
+                    })
+                    .catch(error => {
+                        showMetricsStatus('Error loading campaigns: ' + error.message, 'error');
+                        loadCampaignsBtn.disabled = false;
+                        loadCampaignsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Campaigns';
+                    });
+            }
+            
+            function displayCampaigns(campaigns) {
+                campaignsList.innerHTML = '';
+                
+                campaigns.forEach(campaign => {
+                    const insights = campaign.insights && campaign.insights.data && campaign.insights.data[0] 
+                        ? campaign.insights.data[0] 
+                        : {};
+                    
+                    const campaignCard = document.createElement('div');
+                    campaignCard.className = 'campaign-card';
+                    
+                    // Get status class
+                    let statusClass = '';
+                    if (campaign.status === 'ACTIVE') statusClass = 'status-active';
+                    else if (campaign.status === 'PAUSED') statusClass = 'status-paused';
+                    else if (campaign.status === 'COMPLETED') statusClass = 'status-completed';
+                    
+                    // Parse actions to find conversions, etc.
+                    let conversions = 0;
+                    let costPerConversion = 0;
+                    
+                    if (insights.actions) {
+                        const conversionActions = insights.actions.filter(action => 
+                            action.action_type.includes('conversion') || 
+                            action.action_type.includes('lead')
+                        );
+                        
+                        if (conversionActions.length > 0) {
+                            conversions = conversionActions.reduce((sum, action) => sum + parseInt(action.value), 0);
+                            
+                            if (conversions > 0 && insights.spend) {
+                                costPerConversion = parseFloat(insights.spend) / conversions;
+                            }
+                        }
+                    }
+                    
+                    campaignCard.innerHTML = `
+                        <div class="campaign-header">
+                            <div class="campaign-name">${campaign.name}</div>
+                            <div class="campaign-status ${statusClass}">${campaign.status}</div>
+                        </div>
+                        <div class="campaign-objective" style="margin-bottom: 15px; font-size: 0.9rem; color: #65676b;">
+                            ${campaign.objective || 'No objective specified'}
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Spend</div>
+                                <div class="metric-value">$${insights.spend ? parseFloat(insights.spend).toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Impressions</div>
+                                <div class="metric-value">${insights.impressions ? parseInt(insights.impressions).toLocaleString() : '0'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Clicks</div>
+                                <div class="metric-value">${insights.clicks ? parseInt(insights.clicks).toLocaleString() : '0'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">CTR</div>
+                                <div class="metric-value">${insights.ctr ? parseFloat(insights.ctr * 100).toFixed(2) + '%' : '0%'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">CPC</div>
+                                <div class="metric-value">$${insights.cpc ? parseFloat(insights.cpc).toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Reach</div>
+                                <div class="metric-value">${insights.reach ? parseInt(insights.reach).toLocaleString() : '0'}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Conversions</div>
+                                <div class="metric-value">${conversions.toLocaleString()}</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Cost/Conversion</div>
+                                <div class="metric-value">$${costPerConversion.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    campaignsList.appendChild(campaignCard);
+                });
+            }
+            
+            // Add event listener for ad account selection change
+            adAccountSelect.addEventListener('change', function() {
+                if (this.value) {
+                    loadCampaigns();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
