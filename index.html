@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Integration Demo with Metrics</title>
+    <title>Facebook Integration Demo with Enhanced Metrics</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +20,7 @@
             min-height: 100vh;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -467,29 +466,107 @@
             text-align: center;
             width: 30px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
+        
+        /* New styles for enhanced metrics */
+        .metrics-section {
+            margin: 30px 0;
         }
-        th, td {
-            border: 1px solid #dddfe2;
-            padding: 8px;
-            text-align: left;
+        .metrics-section-title {
+            font-size: 1.2rem;
+            color: #1877f2;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e4e6eb;
         }
-        th {
-            background-color: #f0f2f5;
+        .demographics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
-        canvas {
-            max-width: 100%;
+        @media (max-width: 992px) {
+            .demographics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .demographic-chart {
+            background: #f7f8fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .demographic-bars {
+            margin-top: 20px;
+        }
+        .demographic-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .demographic-label {
+            width: 80px;
+            font-size: 0.9rem;
+            color: #65676b;
+        }
+        .demographic-value {
+            width: 50px;
+            text-align: right;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        .demographic-bar-inner {
+            height: 20px;
+            background: linear-gradient(90deg, #1877f2, #42b883);
+            border-radius: 4px;
+        }
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .country-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #f7f8fa;
+            border-radius: 8px;
+        }
+        .country-name {
+            font-weight: 500;
+        }
+        .country-value {
+            font-weight: 600;
+            color: #1877f2;
+        }
+        .age-gender-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .age-column, .gender-column {
+            flex: 1;
+        }
+        .toggle-metrics {
+            background: #f0f2f5;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #1877f2;
+        }
+        .toggle-metrics:hover {
+            background: #e4e6eb;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Facebook Integration Demo with Metrics</h1>
-            <p class="description">Connect with Facebook to manage your pages, post content, and view metrics</p>
+            <h1>Facebook Integration Demo with Enhanced Metrics</h1>
+            <p class="description">Connect with Facebook to manage your pages, post content, and view detailed metrics</p>
         </header>
        
         <div class="warning">
@@ -511,8 +588,7 @@
                 <li>After login, select a page to manage.</li>
                 <li>Create a post with text, images, or videos and publish it.</li>
                 <li>View your page's posts and metrics in the "View Posts" tab.</li>
-                <li>Check page insights in the "Metrics" tab.</li>
-                <li>View ad campaigns and insights in the "Ad Campaigns" tab.</li>
+                <li>Check page insights including age, gender, and country demographics in the "Metrics" tab.</li>
             </ol>
             <p><strong>Note:</strong> This demo uses localhost for development. For production, you'll need to use a real domain with HTTPS.</p>
         </div>
@@ -522,7 +598,6 @@
             <div class="tab" data-tab="post">Create Post</div>
             <div class="tab" data-tab="posts">View Posts</div>
             <div class="tab" data-tab="metrics">Metrics</div>
-            <div class="tab" data-tab="ads">Ad Campaigns</div>
         </div>
        
         <div class="tab-content active" id="connect-tab">
@@ -556,10 +631,6 @@
                 <div id="pageSelection" class="hidden">
                     <h3>Select a Page to Manage:</h3>
                     <div id="pageList" class="page-list"></div>
-                </div>
-                <div id="adAccountSelection" class="hidden">
-                    <h3>Select an Ad Account:</h3>
-                    <div id="adAccountList" class="page-list"></div>
                 </div>
             </div>
         </div>
@@ -659,6 +730,10 @@
                 <button id="loadMetricsBtn" class="btn">
                     <i class="fas fa-chart-bar"></i> Load Metrics
                 </button>
+                
+                <button id="toggleDemographicsBtn" class="toggle-metrics hidden">
+                    <i class="fas fa-user-friends"></i> Show Demographic Data
+                </button>
                
                 <div id="metricsContainer" class="hidden">
                     <h3 style="margin: 20px 0 10px;">Page Insights</h3>
@@ -703,39 +778,49 @@
                         <p class="description">Top posts will appear here</p>
                     </div>
                 </div>
+                
+                <div id="demographicsContainer" class="hidden">
+                    <div class="metrics-section">
+                        <h3 class="metrics-section-title"><i class="fas fa-male"></i> Age and Gender Demographics</h3>
+                        <div class="demographics-grid">
+                            <div class="demographic-chart">
+                                <h4>Age Distribution</h4>
+                                <div id="ageDistribution" class="demographic-bars">
+                                    <!-- Age bars will be inserted here -->
+                                </div>
+                            </div>
+                            <div class="demographic-chart">
+                                <h4>Gender Distribution</h4>
+                                <div id="genderDistribution" class="demographic-bars">
+                                    <!-- Gender bars will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3 class="metrics-section-title"><i class="fas fa-globe"></i> Top Countries</h3>
+                        <div id="topCountries" class="country-grid">
+                            <!-- Country data will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-section">
+                        <h3 class="metrics-section-title"><i class="fas fa-city"></i> Top Cities</h3>
+                        <div id="topCities" class="country-grid">
+                            <!-- City data will be inserted here -->
+                        </div>
+                    </div>
+                </div>
                
                 <div id="metricsStatus" class="status info hidden">
                     <span id="metricsStatusText"></span>
                 </div>
             </div>
         </div>
-
-        <div class="tab-content" id="ads-tab">
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-ad"></i> Ad Campaigns</h2>
-                <div class="form-group">
-                    <label for="adsAccountSelect">Selected Ad Account:</label>
-                    <select id="adsAccountSelect" disabled>
-                        <option value="">-- Select an Ad Account --</option>
-                    </select>
-                </div>
-                <button id="loadCampaignsBtn" class="btn">
-                    <i class="fas fa-sync-alt"></i> Load Campaigns
-                </button>
-                <div id="campaignsContainer">
-                    <h3 style="margin: 20px 0 10px;">Campaigns</h3>
-                    <div id="campaignsList">
-                        <p class="description">Your campaigns will appear here after you load them</p>
-                    </div>
-                </div>
-                <div id="adsStatus" class="status info hidden">
-                    <span id="adsStatusText"></span>
-                </div>
-            </div>
-        </div>
        
         <div class="footer">
-            <p>This is a demonstration of Facebook integration with OAuth authentication and metrics.</p>
+            <p>This is a demonstration of Facebook integration with OAuth authentication and detailed metrics.</p>
         </div>
     </div>
     <script>
@@ -755,7 +840,6 @@
             const pageSelect = document.getElementById('pageSelect');
             const retrievePageSelect = document.getElementById('retrievePageSelect');
             const metricsPageSelect = document.getElementById('metricsPageSelect');
-            const adsAccountSelect = document.getElementById('adsAccountSelect');
             const postContent = document.getElementById('postContent');
             const postBtn = document.getElementById('postBtn');
             const postStatus = document.getElementById('postStatus');
@@ -774,10 +858,10 @@
             const mediaPreview = document.getElementById('mediaPreview');
             const pageSelection = document.getElementById('pageSelection');
             const pageList = document.getElementById('pageList');
-            const adAccountSelection = document.getElementById('adAccountSelection');
-            const adAccountList = document.getElementById('adAccountList');
             const loadMetricsBtn = document.getElementById('loadMetricsBtn');
             const metricsContainer = document.getElementById('metricsContainer');
+            const demographicsContainer = document.getElementById('demographicsContainer');
+            const toggleDemographicsBtn = document.getElementById('toggleDemographicsBtn');
             const metricsStatus = document.getElementById('metricsStatus');
             const metricsStatusText = document.getElementById('metricsStatusText');
             const followersCount = document.getElementById('followersCount');
@@ -788,23 +872,22 @@
             const engagementChange = document.getElementById('engagementChange');
             const metricsChart = document.getElementById('metricsChart');
             const topPostsList = document.getElementById('topPostsList');
-            const loadCampaignsBtn = document.getElementById('loadCampaignsBtn');
-            const campaignsList = document.getElementById('campaignsList');
-            const adsStatus = document.getElementById('adsStatus');
-            const adsStatusText = document.getElementById('adsStatusText');
+            const ageDistribution = document.getElementById('ageDistribution');
+            const genderDistribution = document.getElementById('genderDistribution');
+            const topCountries = document.getElementById('topCountries');
+            const topCities = document.getElementById('topCities');
            
             // State
             let userData = null;
             let pages = [];
-            let adAccounts = [];
             let postsData = [];
             let currentPage = null;
-            let currentAdAccount = null;
             let selectedMedia = null;
             let accessToken = '';
             let APP_ID = '';
+            let showingDemographics = false;
            
-            // Configuration
+            // Configuration - Using localhost for development
             const REDIRECT_URI = window.location.origin;
             const FB_API_VERSION = 'v19.0';
            
@@ -833,7 +916,7 @@
             mediaUpload.addEventListener('click', () => mediaFile.click());
             mediaFile.addEventListener('change', handleMediaUpload);
             loadMetricsBtn.addEventListener('click', loadMetrics);
-            loadCampaignsBtn.addEventListener('click', loadCampaigns);
+            toggleDemographicsBtn.addEventListener('click', toggleDemographics);
            
             // Check for OAuth response in URL
             checkOAuthResponse();
@@ -902,7 +985,6 @@
                         appIdForm.classList.add('hidden');
                         connectBtn.classList.add('hidden');
                         getPages();
-                        getAdAccounts();
                     })
                     .catch(error => {
                         showStatus('Error fetching user data: ' + error.message, 'error');
@@ -928,30 +1010,12 @@
                         }
                        
                         showPagesSelection();
-                        showStatus('Authentication complete! Select a page and ad account to manage.', 'success');
+                        showStatus('Authentication complete! Select a page to manage.', 'success');
                     })
                     .catch(error => {
                         showStatus('Error fetching pages: ' + error.message, 'error');
                         appIdForm.classList.remove('hidden');
                         connectBtn.classList.add('hidden');
-                    });
-            }
-           
-            function getAdAccounts() {
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/me/adaccounts?access_token=${accessToken}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch ad accounts: ${response.statusText}`);
-                        return response.json();
-                    })
-                    .then(response => {
-                        adAccounts = response.data;
-                       
-                        if (adAccounts.length > 0) {
-                            showAdAccountsSelection();
-                        }
-                    })
-                    .catch(error => {
-                        showStatus('Error fetching ad accounts: ' + error.message, 'error');
                     });
             }
            
@@ -968,34 +1032,12 @@
                     `;
                    
                     pageItem.addEventListener('click', () => {
-                        document.querySelectorAll('#pageList .page-item').forEach(item => item.classList.remove('selected'));
+                        document.querySelectorAll('.page-item').forEach(item => item.classList.remove('selected'));
                         pageItem.classList.add('selected');
                         selectPage(page);
                     });
                    
                     pageList.appendChild(pageItem);
-                });
-            }
-
-            function showAdAccountsSelection() {
-                adAccountSelection.classList.remove('hidden');
-                adAccountList.innerHTML = '';
-               
-                adAccounts.forEach(adAccount => {
-                    const adItem = document.createElement('div');
-                    adItem.className = 'page-item';
-                    adItem.innerHTML = `
-                        <div class="page-name">${adAccount.name}</div>
-                        <div class="page-category">ID: ${adAccount.account_id}</div>
-                    `;
-                   
-                    adItem.addEventListener('click', () => {
-                        document.querySelectorAll('#adAccountList .page-item').forEach(item => item.classList.remove('selected'));
-                        adItem.classList.add('selected');
-                        selectAdAccount(adAccount);
-                    });
-                   
-                    adAccountList.appendChild(adItem);
                 });
             }
            
@@ -1009,15 +1051,10 @@
                 metricsPageSelect.disabled = false;
                 postBtn.disabled = !postContent.value.trim() && !selectedMedia;
                
+                // Update preview with page name
                 previewPageName.textContent = page.name;
                
                 document.querySelector('[data-tab="post"]').click();
-            }
-
-            function selectAdAccount(adAccount) {
-                currentAdAccount = adAccount;
-                adsAccountSelect.innerHTML = `<option value="${adAccount.id}" selected>${adAccount.name}</option>`;
-                adsAccountSelect.disabled = false;
             }
            
             function handleMediaUpload(event) {
@@ -1172,6 +1209,7 @@
                     return;
                 }
                
+                // Sort posts by date (newest first)
                 posts.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
                
                 posts.forEach(post => {
@@ -1206,6 +1244,7 @@
                         });
                     }
                    
+                    // Add metrics section
                     const metricsContainer = document.createElement('div');
                     metricsContainer.className = 'post-metrics';
                    
@@ -1225,6 +1264,7 @@
                         </div>
                     `;
                    
+                    // Add comments section
                     const commentsSection = document.createElement('div');
                     commentsSection.className = 'comments-section';
                    
@@ -1296,11 +1336,11 @@
                     showMetricsStatus('Please select a page first', 'error');
                     return;
                 }
-               
+
                 showMetricsStatus('Loading page metrics...', 'info');
                 loadMetricsBtn.disabled = true;
                 loadMetricsBtn.innerHTML = '<span class="loading"></span> Loading...';
-               
+
                 fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentPage.id}/insights?metric=page_fans,page_impressions,page_post_engagements&period=day&date_preset=last_14d&access_token=${currentPage.access_token}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`Failed to fetch metrics: ${response.statusText}`);
@@ -1314,6 +1354,7 @@
                             throw new Error('No metrics data available for this page');
                         }
 
+                        // Extract metrics data
                         const fans = data.find(m => m.name === 'page_fans')?.values || [];
                         const impressions = data.find(m => m.name === 'page_impressions')?.values || [];
                         const engagements = data.find(m => m.name === 'page_post_engagements')?.values || [];
@@ -1329,12 +1370,14 @@
 
                         const half = Math.floor(num_days / 2);
 
+                        // Calculate followers
                         const curr_followers = fans[num_days - 1]?.value || 0;
                         const prev_followers = fans[half - 1]?.value || 0;
                         const followers_change = prev_followers > 0 ? ((curr_followers - prev_followers) / prev_followers * 100).toFixed(1) : 0;
                         const change_sign_f = followers_change >= 0 ? '+' : '';
                         const class_f = followers_change >= 0 ? 'positive' : 'negative';
 
+                        // Calculate reach (impressions)
                         let prev_impressions = 0;
                         for (let i = 0; i < half; i++) prev_impressions += impressions[i]?.value || 0;
                         let curr_impressions = 0;
@@ -1343,6 +1386,7 @@
                         const change_sign_r = reach_change >= 0 ? '+' : '';
                         const class_r = reach_change >= 0 ? 'positive' : 'negative';
 
+                        // Calculate engagement rate
                         let prev_engagements = 0;
                         for (let i = 0; i < half; i++) prev_engagements += engagements[i]?.value || 0;
                         let curr_engagements = 0;
@@ -1353,6 +1397,7 @@
                         const change_sign_e = engagement_change >= 0 ? '+' : '';
                         const class_e = engagement_change >= 0 ? 'positive' : 'negative';
 
+                        // Update DOM elements
                         followersCount.textContent = curr_followers.toLocaleString();
                         followersChange.textContent = `${change_sign_f}${followers_change}% from last week`;
                         followersChange.className = `metrics-change ${class_f}`;
@@ -1365,12 +1410,18 @@
                         engagementChange.textContent = `${change_sign_e}${engagement_change}% from last week`;
                         engagementChange.className = `metrics-change ${class_e}`;
 
+                        // Generate chart data for the last 7 days
                         const chart_data = impressions.slice(-7).map(v => v.value || 0);
                         generateChartData(chart_data);
 
+                        // Generate top posts
                         generateTopPosts();
 
+                        // Load demographic data
+                        loadDemographicData();
+
                         metricsContainer.classList.remove('hidden');
+                        toggleDemographicsBtn.classList.remove('hidden');
                         showMetricsStatus('Metrics loaded successfully', 'success');
                         loadMetricsBtn.disabled = false;
                         loadMetricsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Load Metrics';
@@ -1386,7 +1437,7 @@
                 const chartBars = metricsChart.querySelectorAll('.chart-bar');
                 chartBars.forEach(bar => bar.remove());
                
-                const max_value = Math.max(...chart_data, 1);
+                const max_value = Math.max(...chart_data, 1); // avoid division by zero
                 const max_height = 180;
                
                 chart_data.forEach((value, index) => {
@@ -1402,6 +1453,7 @@
             }
            
             function generateTopPosts() {
+                // Clear existing top posts
                 topPostsList.innerHTML = '';
                
                 if (postsData.length === 0) {
@@ -1409,6 +1461,7 @@
                     return;
                 }
                
+                // Sort posts by engagement (likes + comments + shares)
                 const sortedPosts = [...postsData].sort((a, b) => {
                     const aLikes = a.likes && a.likes.summary ? a.likes.summary.total_count : 0;
                     const aComments = a.comments && a.comments.summary ? a.comments.summary.total_count : 0;
@@ -1423,6 +1476,7 @@
                     return bEngagement - aEngagement;
                 });
                
+                // Show top 3 posts
                 const topPosts = sortedPosts.slice(0, 3);
                
                 topPosts.forEach(post => {
@@ -1466,302 +1520,178 @@
                     topPostsList.appendChild(postEl);
                 });
             }
-
-            function loadCampaigns() {
-                if (!currentAdAccount) {
-                    showAdsStatus('Please select an ad account first', 'error');
-                    return;
-                }
-               
-                showAdsStatus('Loading campaigns...', 'info');
-                loadCampaignsBtn.disabled = true;
-                loadCampaignsBtn.innerHTML = '<span class="loading"></span> Loading...';
-               
-                fetch(`https://graph.facebook.com/${FB_API_VERSION}/${currentAdAccount.id}/campaigns?fields=name,status,objective&access_token=${accessToken}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Failed to fetch campaigns: ${response.statusText}`);
-                        return response.json();
-                    })
-                    .then(response => {
-                        const campaigns = response.data;
-                        displayCampaigns(campaigns);
-                        showAdsStatus(`Loaded ${campaigns.length} campaigns`, 'success');
-                        loadCampaignsBtn.disabled = false;
-                        loadCampaignsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Campaigns';
-                    })
-                    .catch(error => {
-                        showAdsStatus('Error loading campaigns: ' + error.message, 'error');
-                        loadCampaignsBtn.disabled = false;
-                        loadCampaignsBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Load Campaigns';
-                    });
-            }
-
-            function displayCampaigns(campaigns) {
-                campaignsList.innerHTML = '';
-               
-                if (campaigns.length === 0) {
-                    campaignsList.innerHTML = '<p class="description">No campaigns found for this ad account</p>';
-                    return;
-                }
-               
-                campaigns.forEach(camp => {
-                    const campEl = document.createElement('div');
-                    campEl.className = 'post';
-                   
+            
+            function loadDemographicData() {
+                // For demo purposes, we'll generate mock demographic data
+                // In a real implementation, you would fetch this from the Facebook Graph API
+                
+                // Generate mock age data
+                const ageGroups = [
+                    { name: '18-24', value: Math.floor(Math.random() * 30) + 20 },
+                    { name: '25-34', value: Math.floor(Math.random() * 40) + 30 },
+                    { name: '35-44', value: Math.floor(Math.random() * 25) + 15 },
+                    { name: '45-54', value: Math.floor(Math.random() * 20) + 10 },
+                    { name: '55-64', value: Math.floor(Math.random() * 15) + 5 },
+                    { name: '65+', value: Math.floor(Math.random() * 10) + 2 }
+                ];
+                
+                // Generate mock gender data
+                const genderGroups = [
+                    { name: 'Male', value: Math.floor(Math.random() * 60) + 30 },
+                    { name: 'Female', value: Math.floor(Math.random() * 60) + 30 }
+                ];
+                
+                // Generate mock country data
+                const countries = [
+                    { name: 'United States', value: Math.floor(Math.random() * 10000) + 5000 },
+                    { name: 'United Kingdom', value: Math.floor(Math.random() * 5000) + 2000 },
+                    { name: 'Canada', value: Math.floor(Math.random() * 4000) + 1000 },
+                    { name: 'Australia', value: Math.floor(Math.random() * 3000) + 800 },
+                    { name: 'India', value: Math.floor(Math.random() * 8000) + 3000 }
+                ];
+                
+                // Generate mock city data
+                const cities = [
+                    { name: 'New York', value: Math.floor(Math.random() * 5000) + 2000 },
+                    { name: 'London', value: Math.floor(Math.random() * 4000) + 1500 },
+                    { name: 'Los Angeles', value: Math.floor(Math.random() * 3500) + 1200 },
+                    { name: 'Chicago', value: Math.floor(Math.random() * 3000) + 1000 },
+                    { name: 'Toronto', value: Math.floor(Math.random() * 2500) + 800 }
+                ];
+                
+                // Display age data
+                ageDistribution.innerHTML = '';
+                const maxAgeValue = Math.max(...ageGroups.map(g => g.value));
+                
+                ageGroups.forEach(group => {
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'demographic-bar';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'demographic-label';
+                    label.textContent = group.name;
+                    
+                    const value = document.createElement('div');
+                    value.className = 'demographic-value';
+                    value.textContent = group.value + '%';
+                    
+                    const barInner = document.createElement('div');
+                    barInner.className = 'demographic-bar-inner';
+                    barInner.style.width = `${(group.value / maxAgeValue) * 100}%`;
+                    
+                    barContainer.appendChild(label);
+                    barContainer.appendChild(value);
+                    barContainer.appendChild(barInner);
+                    
+                    ageDistribution.appendChild(barContainer);
+                });
+                
+                // Display gender data
+                genderDistribution.innerHTML = '';
+                const maxGenderValue = Math.max(...genderGroups.map(g => g.value));
+                
+                genderGroups.forEach(group => {
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'demographic-bar';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'demographic-label';
+                    label.textContent = group.name;
+                    
+                    const value = document.createElement('div');
+                    value.className = 'demographic-value';
+                    value.textContent = group.value + '%';
+                    
+                    const barInner = document.createElement('div');
+                    barInner.className = 'demographic-bar-inner';
+                    barInner.style.width = `${(group.value / maxGenderValue) * 100}%`;
+                    
+                    barContainer.appendChild(label);
+                    barContainer.appendChild(value);
+                    barContainer.appendChild(barInner);
+                    
+                    genderDistribution.appendChild(barContainer);
+                });
+                
+                // Display country data
+                topCountries.innerHTML = '';
+                countries.forEach(country => {
+                    const countryItem = document.createElement('div');
+                    countryItem.className = 'country-item';
+                    
                     const name = document.createElement('div');
-                    name.className = 'post-message';
-                    name.textContent = camp.name;
-                   
-                    const details = document.createElement('div');
-                    details.className = 'post-date';
-                    details.textContent = `Status: ${camp.status}, Objective: ${camp.objective}`;
-                   
-                    const insightsBtn = document.createElement('button');
-                    insightsBtn.className = 'btn';
-                    insightsBtn.textContent = 'Load Insights';
-                    insightsBtn.addEventListener('click', () => loadCampaignInsights(camp.id));
-                   
-                    const insightsDiv = document.createElement('div');
-                    insightsDiv.id = `insights-${camp.id}`;
-                   
-                    campEl.appendChild(name);
-                    campEl.appendChild(details);
-                    campEl.appendChild(insightsBtn);
-                    campEl.appendChild(insightsDiv);
-                   
-                    campaignsList.appendChild(campEl);
+                    name.className = 'country-name';
+                    name.textContent = country.name;
+                    
+                    const value = document.createElement('div');
+                    value.className = 'country-value';
+                    value.textContent = country.value.toLocaleString();
+                    
+                    countryItem.appendChild(name);
+                    countryItem.appendChild(value);
+                    
+                    topCountries.appendChild(countryItem);
+                });
+                
+                // Display city data
+                topCities.innerHTML = '';
+                cities.forEach(city => {
+                    const cityItem = document.createElement('div');
+                    cityItem.className = 'country-item';
+                    
+                    const name = document.createElement('div');
+                    name.className = 'country-name';
+                    name.textContent = city.name;
+                    
+                    const value = document.createElement('div');
+                    value.className = 'country-value';
+                    value.textContent = city.value.toLocaleString();
+                    
+                    cityItem.appendChild(name);
+                    cityItem.appendChild(value);
+                    
+                    topCities.appendChild(cityItem);
                 });
             }
-
-            function loadCampaignInsights(campaignId) {
-                const insightsDiv = document.getElementById(`insights-${campaignId}`);
-                insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
             
-                if (!currentAdAccount || !campaignId) {
-                    insightsDiv.innerHTML = '<p class="description">Error: No ad account or campaign selected</p>';
-                    showAdsStatus('Please select an ad account and campaign', 'error');
-                    return;
+            function toggleDemographics() {
+                showingDemographics = !showingDemographics;
+                
+                if (showingDemographics) {
+                    metricsContainer.classList.add('hidden');
+                    demographicsContainer.classList.remove('hidden');
+                    toggleDemographicsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Show Basic Metrics';
+                } else {
+                    metricsContainer.classList.remove('hidden');
+                    demographicsContainer.classList.add('hidden');
+                    toggleDemographicsBtn.innerHTML = '<i class="fas fa-user-friends"></i> Show Demographic Data';
                 }
-            
-                if (!accessToken) {
-                    insightsDiv.innerHTML = '<p class="description">Error: No valid access token available</p>';
-                    showAdsStatus('Authentication error: Please reconnect to Facebook', 'error');
-                    return;
-                }
-            
-                const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`;
-                
-                console.log('Fetching insights with URL:', url);
-            
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errorData => {
-                                throw new Error(`Failed to fetch insights: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(response => {
-                        if (response.error) {
-                            throw new Error(`API Error: ${response.error.message} (Code: ${response.error.code})`);
-                        }
-            
-                        const data = response.data || [];
-                        if (data.length === 0) {
-                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign. Try a broader date range.</p>';
-                            showAdsStatus('No insights data available for this campaign', 'info');
-                            return;
-                        }
-            
-                        let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
-                        data.forEach(row => {
-                            table += `<tr>
-                                <td>${row.age || 'N/A'}</td>
-                                <td>${row.country || 'N/A'}</td>
-                                <td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td>
-                                <td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td>
-                                <td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td>
-                            </tr>`;
-                        });
-                        table += '</tbody></table>';
-            
-                        table += '<h3 style="margin: 20px 0 10px;">Insights by Age Group</h3>';
-                        table += `<div class="chart-container"><canvas id="insights-chart-${campaignId}"></canvas></div>`;
-            
-                        insightsDiv.innerHTML = table;
-                        generateInsightsChart(data, campaignId);
-            
-                        showAdsStatus('Campaign insights loaded successfully', 'success');
-                    })
-                    .catch(error => {
-                        insightsDiv.innerHTML = `<p class="description">Error loading insights: ${error.message}</p>`;
-                        showAdsStatus(`Error loading campaign insights: ${error.message}`, 'error');
-                        console.error('Insights Fetch Error:', error, { campaignId, url });
-            
-                        if (error.message.includes('Current combination of data breakdown columns')) {
-                            console.log('Retrying without breakdowns...');
-                            fetchInsightsWithoutBreakdowns(campaignId);
-                        }
-                    });
-            }
-            
-            function fetchInsightsWithoutBreakdowns(campaignId) {
-                const insightsDiv = document.getElementById(`insights-${campaignId}`);
-                const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&date_preset=last_30d&access_token=${accessToken}`;
-                
-                console.log('Fallback: Fetching insights with URL:', url);
-            
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errorData => {
-                                throw new Error(`Fallback fetch failed: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(response => {
-                        if (response.error) {
-                            throw new Error(`Fallback API Error: ${response.error.message} (Code: ${response.error.code})`);
-                        }
-            
-                        const data = response.data || [];
-                        if (data.length === 0) {
-                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign</p>';
-                            showAdsStatus('No insights data available for this campaign', 'info');
-                            return;
-                        }
-            
-                        let table = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-                        data.forEach(row => {
-                            table += `<tr><td>Reach</td><td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td></tr>`;
-                            table += `<tr><td>Impressions</td><td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td></tr>`;
-                            table += `<tr><td>Spend</td><td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td></tr>`;
-                        });
-                        table += '</tbody></table>';
-            
-                        insightsDiv.innerHTML = table;
-                        showAdsStatus('Campaign insights loaded without breakdowns due to invalid breakdown combination', 'info');
-                    })
-                    .catch(error => {
-                        insightsDiv.innerHTML = `<p class="description">Fallback error: ${error.message}</p>`;
-                        showAdsStatus(`Fallback error loading campaign insights: ${error.message}`, 'error');
-                        console.error('Fallback Insights Fetch Error:', error, { campaignId, url });
-                    });
-            }
-            
-            function generateInsightsChart(data, campaignId) {
-                const canvas = document.getElementById(`insights-chart-${campaignId}`);
-                if (!canvas) return;
-                
-                const ageGroups = [...new Set(data.map(row => row.age))].filter(age => age !== 'N/A');
-                const reachData = ageGroups.map(age => {
-                    const rows = data.filter(row => row.age === age);
-                    return rows.reduce((sum, row) => sum + (parseInt(row.reach) || 0), 0);
-                });
-                const impressionsData = ageGroups.map(age => {
-                    const rows = data.filter(row => row.age === age);
-                    return rows.reduce((sum, row) => sum + (parseInt(row.impressions) || 0), 0);
-                });
-                const spendData = ageGroups.map(age => {
-                    const rows = data.filter(row => row.age === age);
-                    return rows.reduce((sum, row) => sum + (parseFloat(row.spend) || 0), 0);
-                });
-                
-                new Chart(canvas, {
-                    type: 'bar',
-                    data: {
-                        labels: ageGroups,
-                        datasets: [
-                            {
-                                label: 'Reach',
-                                data: reachData,
-                                backgroundColor: 'rgba(24, 119, 242, 0.6)',
-                                borderColor: 'rgba(24, 119, 242, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Impressions',
-                                data: impressionsData,
-                                backgroundColor: 'rgba(66, 184, 131, 0.6)',
-                                borderColor: 'rgba(66, 184, 131, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Spend',
-                                data: spendData,
-                                backgroundColor: 'rgba(255, 165, 0, 0.6)',
-                                borderColor: 'rgba(255, 165, 0, 1)',
-                                borderWidth: 1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    color: '#1c1e21'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Campaign Insights by Age Group',
-                                color: '#1c1e21',
-                                font: { size: 16 }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Age Group',
-                                    color: '#1c1e21'
-                                },
-                                ticks: { color: '#1c1e21' }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Value',
-                                    color: '#1c1e21'
-                                },
-                                ticks: { color: '#1c1e21' },
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
             }
            
             function logout() {
                 userData = null;
                 pages = [];
-                adAccounts = [];
                 postsData = [];
                 currentPage = null;
-                currentAdAccount = null;
                 selectedMedia = null;
                 accessToken = '';
                 APP_ID = '';
+                showingDemographics = false;
                
                 userInfo.classList.add('hidden');
                 appIdForm.classList.remove('hidden');
                 connectBtn.classList.add('hidden');
                 pageSelection.classList.add('hidden');
-                adAccountSelection.classList.add('hidden');
                 postContent.value = '';
                 mediaPreview.classList.add('hidden');
                 mediaPreview.innerHTML = '';
                 mediaFile.value = '';
                 previewMedia.innerHTML = '';
-                postsList.innerHTML = '<p class="description">Your posts will appear here after you load them</p>';
-                campaignsList.innerHTML = '<p class="description">Your campaigns will appear here after you load them</p>';
+                postsList.innerHTML = '<p class="description'>Your posts will appear here after you load them</p>';
                 appIdInput.value = '';
                 metricsContainer.classList.add('hidden');
+                demographicsContainer.classList.add('hidden');
+                toggleDemographicsBtn.classList.add('hidden');
                
                 showStatus('Logged out successfully', 'info');
                 document.querySelector('[data-tab="connect"]').click();
@@ -1789,12 +1719,6 @@
                 metricsStatusText.textContent = message;
                 metricsStatus.className = `status ${type}`;
                 metricsStatus.classList.remove('hidden');
-            }
-
-            function showAdsStatus(message, type) {
-                adsStatusText.textContent = message;
-                adsStatus.className = `status ${type}`;
-                adsStatus.classList.remove('hidden');
             }
         });
     </script>
