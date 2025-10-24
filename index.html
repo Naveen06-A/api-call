@@ -1536,74 +1536,69 @@
             function loadCampaignInsights(campaignId) {
                 const insightsDiv = document.getElementById(`insights-${campaignId}`);
                 insightsDiv.innerHTML = '<span class="loading"></span> Loading insights...';
-            
-                if (!currentAdAccount || !campaignId) {
-                    insightsDiv.innerHTML = '<p class="description">Error: No ad account or campaign selected</p>';
-                    showAdsStatus('Please select an ad account and campaign', 'error');
-                    return;
-                }
-            
-                if (!accessToken) {
-                    insightsDiv.innerHTML = '<p class="description">Error: No valid access token available</p>';
-                    showAdsStatus('Authentication error: Please reconnect to Facebook', 'error');
-                    return;
-                }
-            
-                const url = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age,country&date_preset=last_30d&access_token=${accessToken}`;
+
+                // Make separate calls for each breakdown
+                const ageUrl = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=age&date_preset=last_30d&access_token=${accessToken}`;
+                const countryUrl = `https://graph.facebook.com/${FB_API_VERSION}/${campaignId}/insights?fields=reach,impressions,spend&breakdowns=country&date_preset=last_30d&access_token=${accessToken}`;
+
+                Promise.all([
+                    fetch(ageUrl).then(r => r.json()),
+                    fetch(countryUrl).then(r => r.json())
+                ])
+                .then(([ageData, countryData]) => {
+                    displayCombinedInsights(insightsDiv, ageData, countryData, campaignId);
+                })
+                .catch(error => {
+                    console.error('Insights Fetch Error:', error);
+                    insightsDiv.innerHTML = `<p class="description">Error loading insights: ${error.message}</p>`;
+                    fetchInsightsWithoutBreakdowns(campaignId);
+                });
+            }
+
+            function displayCombinedInsights(container, ageData, countryData, campaignId) {
+                let html = '<h3>Age Breakdown</h3>';
                 
-                console.log('Fetching insights with URL:', url);
-            
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errorData => {
-                                throw new Error(`Failed to fetch insights: ${response.statusText} (Status: ${response.status}, Code: ${errorData.error?.code || 'Unknown'}, Message: ${errorData.error?.message || 'No details provided'})`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(response => {
-                        if (response.error) {
-                            throw new Error(`API Error: ${response.error.message} (Code: ${response.error.code})`);
-                        }
-            
-                        const data = response.data || [];
-                        if (data.length === 0) {
-                            insightsDiv.innerHTML = '<p class="description">No insights data available for this campaign. Try a broader date range.</p>';
-                            showAdsStatus('No insights data available for this campaign', 'info');
-                            return;
-                        }
-            
-                        let table = '<table><thead><tr><th>Age</th><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
-                        data.forEach(row => {
-                            table += `<tr>
-                                <td>${row.age || 'N/A'}</td>
-                                <td>${row.country || 'N/A'}</td>
-                                <td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td>
-                                <td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td>
-                                <td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td>
-                            </tr>`;
-                        });
-                        table += '</tbody></table>';
-            
-                        table += '<h3 style="margin: 20px 0 10px;">Insights by Age Group</h3>';
-                        table += `<div class="chart-container"><canvas id="insights-chart-${campaignId}"></canvas></div>`;
-            
-                        insightsDiv.innerHTML = table;
-                        generateInsightsChart(data, campaignId);
-            
-                        showAdsStatus('Campaign insights loaded successfully', 'success');
-                    })
-                    .catch(error => {
-                        insightsDiv.innerHTML = `<p class="description">Error loading insights: ${error.message}</p>`;
-                        showAdsStatus(`Error loading campaign insights: ${error.message}`, 'error');
-                        console.error('Insights Fetch Error:', error, { campaignId, url });
-            
-                        if (error.message.includes('Current combination of data breakdown columns')) {
-                            console.log('Retrying without breakdowns...');
-                            fetchInsightsWithoutBreakdowns(campaignId);
-                        }
+                if (ageData.data && ageData.data.length > 0) {
+                    html += '<table><thead><tr><th>Age</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
+                    ageData.data.forEach(row => {
+                        html += `<tr>
+                            <td>${row.age || 'N/A'}</td>
+                            <td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td>
+                            <td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td>
+                            <td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td>
+                        </tr>`;
                     });
+                    html += '</tbody></table>';
+                    
+                    // Generate chart for age data
+                    html += `<div class="chart-container"><canvas id="age-chart-${campaignId}"></canvas></div>`;
+                    generateAgeChart(ageData.data, campaignId);
+                } else {
+                    html += '<p>No age breakdown data available.</p>';
+                }
+
+                html += '<h3>Country Breakdown</h3>';
+                
+                if (countryData.data && countryData.data.length > 0) {
+                    html += '<table><thead><tr><th>Country</th><th>Reach</th><th>Impressions</th><th>Spend</th></tr></thead><tbody>';
+                    countryData.data.forEach(row => {
+                        html += `<tr>
+                            <td>${row.country || 'N/A'}</td>
+                            <td>${row.reach ? parseInt(row.reach).toLocaleString() : 0}</td>
+                            <td>${row.impressions ? parseInt(row.impressions).toLocaleString() : 0}</td>
+                            <td>${row.spend ? parseFloat(row.spend).toFixed(2) : 0}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    
+                    // Generate chart for country data
+                    html += `<div class="chart-container"><canvas id="country-chart-${campaignId}"></canvas></div>`;
+                    generateCountryChart(countryData.data, campaignId);
+                } else {
+                    html += '<p>No country breakdown data available.</p>';
+                }
+
+                container.innerHTML = html;
             }
             
             function fetchInsightsWithoutBreakdowns(campaignId) {
