@@ -827,20 +827,10 @@
         </div>
     </div>
     <script>
-        // Move the startOAuthFlow function outside the DOMContentLoaded event
-        function startOAuthFlow() {
-            if (!APP_ID) {
-                showStatus('Please submit a valid App ID first', 'error');
-                return;
-            }
-           
-            showStatus('Redirecting to Facebook for authentication...', 'info');
-            connectBtn.disabled = true;
-            connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
-           
-            const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights,ads_read&response_type=token`;
-            window.location.href = authUrl;
-        }
+        // Global variables
+        let APP_ID = '';
+        const REDIRECT_URI = window.location.origin;
+        const FB_API_VERSION = 'v19.0';
 
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
@@ -901,13 +891,8 @@
             let currentPage = null;
             let selectedMedia = null;
             let accessToken = '';
-            let APP_ID = '';
             let connectedAccounts = [];
             let activeAccount = null;
-           
-            // Configuration
-            const REDIRECT_URI = window.location.origin;
-            const FB_API_VERSION = 'v19.0';
            
             // Tab functionality
             tabs.forEach(tab => {
@@ -950,6 +935,20 @@
                 appIdForm.classList.add('hidden');
                 connectBtn.classList.remove('hidden');
                 showStatus('App ID submitted. Click "Connect Facebook" to authenticate.', 'success');
+            }
+           
+            function startOAuthFlow() {
+                if (!APP_ID) {
+                    showStatus('Please submit a valid App ID first', 'error');
+                    return;
+                }
+               
+                showStatus('Redirecting to Facebook for authentication...', 'info');
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<span class="loading"></span> Connecting...';
+               
+                const authUrl = `https://www.facebook.com/${FB_API_VERSION}/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=pages_show_list,pages_read_engagement,pages_manage_posts,read_insights,ads_read&response_type=token`;
+                window.location.href = authUrl;
             }
            
             function checkOAuthResponse() {
